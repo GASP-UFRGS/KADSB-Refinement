@@ -2,4 +2,5 @@ models/
 plots/
 results/
 _pycache_/
+__pycache__/
 _old/
