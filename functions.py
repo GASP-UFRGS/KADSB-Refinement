@@ -518,5 +518,5 @@ def sample_data(dls, data, netsEnergy, netsConv, de, d, num_steps_voxel, num_ste
             "energy_voxel_gflash_trafo":np.concatenate(data_x, 0),
             "energy_gflash_trafo":np.concatenate(data_y, 0),
             "energy_particle":np.concatenate(data_energy_particle, 0),
-            "netsEnergy_ts":np.concatenate(netsEnergy_ts,0),
-            "netsConv_ts":np.concatenate(netsConv_ts,0)})
+            "netsEnergy_ts":np.array(netsEnergy_ts),
+            "netsConv_ts":np.array(netsConv_ts)})
