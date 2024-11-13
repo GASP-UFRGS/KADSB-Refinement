@@ -454,8 +454,7 @@ def sample_data(dls, data, netsEnergy, netsConv, de, d, num_steps_voxel, num_ste
                 else:
                     z = torch.randn(energy__shower_start.shape, device=x.device)
                     energy__shower_start = t_old + torch.sqrt(2 * gamma) * z
-                
-                t0 = time.time()
+
                 t_new = energy__shower_start + netsEnergy[forward_or_backward_rev](energy__shower_start, 
                                                                              steps_energy[:, k, :],
                                                                              energy__particle, energy__shower_start)
@@ -480,7 +479,6 @@ def sample_data(dls, data, netsEnergy, netsConv, de, d, num_steps_voxel, num_ste
                 t0 = time.time()
                 #---------------------------------------------------------------------------------------------------#
                 t_old = x + netsConv[forward_or_backward_rev](x, steps_voxel[:, k, :], y_current, x)
-                netsConv_ts["old"].append(t0-time.time())
 
                 if k == num_iter_voxel-1:
                     x = t_old
@@ -488,7 +486,6 @@ def sample_data(dls, data, netsEnergy, netsConv, de, d, num_steps_voxel, num_ste
                     z = torch.randn(x.shape, device=x.device)
                     x = t_old + torch.sqrt(2 * gamma) * z
 
-                t0 = time.time()
                 t_new = x + netsConv[forward_or_backward_rev](x, steps_voxel[:, k, :], y_current,x )
                 
                 x_tot[:, k, :] = x
