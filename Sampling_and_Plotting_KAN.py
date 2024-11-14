@@ -1,7 +1,7 @@
 
 import sys
 from pathlib import Path
-import argparse
+# import argparse
 
 import numpy as np
 import mplhep as hep
@@ -19,100 +19,101 @@ from functions import EMA, load_data, sample_data
 from plotting_functions import histogram, scatter, get_nhit, get_espec, emd
 
 
-parser = argparse.ArgumentParser()
+# parser = argparse.ArgumentParser()
 
-parser.add_argument('--en_model', type=str, required=True)
-parser.add_argument('--en_elayers_dim', type=int, required=True)
-parser.add_argument('--pos_dim', type=int, required=True)
-parser.add_argument('--en_model_iter', type=int, required=True)
+# parser.add_argument('--en_model', type=str, required=True)
+# parser.add_argument('--en_elayers_dim', type=int, required=True)
+# parser.add_argument('--pos_dim', type=int, required=True)
+# parser.add_argument('--en_model_iter', type=int, required=True)
 
-parser.add_argument('--conv_model', type=str, required=True)
-parser.add_argument('--conv_elayers_dim', type=int, required=True)
-parser.add_argument('--temb_dim', type=int, required=True)
-parser.add_argument('--conv_dof', type=int, required=True)
-parser.add_argument('--conv_model_iter', type=int, required=True)
+# parser.add_argument('--conv_model', type=str, required=True)
+# parser.add_argument('--conv_elayers_dim', type=int, required=True)
+# parser.add_argument('--temb_dim', type=int, required=True)
+# parser.add_argument('--conv_dof', type=int, required=True)
+# parser.add_argument('--conv_model_iter', type=int, required=True)
 
-parser.add_argument('--abs_path', type=str, default='/mnt/d/UFRGS/TCC/Dados/')
+# parser.add_argument('--abs_path', type=str, default='/mnt/d/UFRGS/TCC/Dados/')
 
-## ----------------------------------------------------------------------------------------------------
-## Load Args
-## ----------------------------------------------------------------------------------------------------
-args = parser.parse_args()
+# ## ----------------------------------------------------------------------------------------------------
+# ## Load Args
+# ## ----------------------------------------------------------------------------------------------------
+# args = parser.parse_args()
 
-modelEnergy_type = args.en_model
-en_elayers_dim = args.en_elayers_dim
-pos_dim = args.pos_dim
-en_model_iter = args.en_model_iter
+# modelEnergy_type = args.en_model
+# en_elayers_dim = args.en_elayers_dim
+# pos_dim = args.pos_dim
+# en_model_iter = args.en_model_iter
 
-modelConv_type = args.conv_model
-conv_elayers_dim = args.conv_elayers_dim
-temb_dim = args.temb_dim
-conv_dof = args.conv_dof
-abs_path = args.abs_path
-conv_model_iter = args.conv_model_iter
-
-
-## ----------------------------------------------------------------------------------------------------
-## Define Models
-## ----------------------------------------------------------------------------------------------------
-
-## Energy
-if modelEnergy_type == "SQuIRELS":
-    from score_models import SquirelsScoreNetwork as ScoreNetworkEnergy
-elif modelEnergy_type == "Bottleneck":
-    from score_models import BottleneckScoreKAGN as ScoreNetworkEnergy
-elif modelEnergy_type == "Chebyshev":
-    from score_models import ChebyScoreKAN as ScoreNetworkEnergy
-elif modelEnergy_type == "Fast":
-    from score_models import FastScoreKAN as ScoreNetworkEnergy
-elif modelEnergy_type == "Gram":
-    from score_models import GramScoreKAN as ScoreNetworkEnergy
-elif modelEnergy_type == "Lagrange":
-    from score_models import LagrangeScoreKAN as ScoreNetworkEnergy
-elif modelEnergy_type == "ReLU":
-    from score_models import ReluScoreKAN as ScoreNetworkEnergy
-elif modelEnergy_type == "Wav":
-    from score_models import WavScoreKAN as ScoreNetworkEnergy
-else:
-    sys.exit("Selected energy model does not exist.")
-    
-## Conv
-if modelConv_type == "Bottleneck":
-    from score_models import BottleneckScoreKAGNConv as ScoreNetworkConv
-elif modelConv_type == "BottleneckKAGNAttentionConv":
-    from score_models import BottleneckScoreKAGNAttentionConv as ScoreNetworkConv
-elif modelConv_type == "BottleneckKAGNLinear":
-    from score_models import BottleneckScoreKAGNLinear as ScoreNetworkConv
-elif modelConv_type == "Chebyshev":
-    from score_models import ChebyScoreKANConv as ScoreNetworkConv
-elif modelConv_type == "Fast":
-    from score_models import FastScoreKANConv as ScoreNetworkConv
-elif modelConv_type == "FastLinear":
-    from score_models import FastScoreKANLinear as ScoreNetworkConv
-elif modelConv_type == "FastWide":
-    from score_models import FastScoreKANConvWide as ScoreNetworkConv
-elif modelConv_type == "Gram":
-    from score_models import GramScoreKANConv as ScoreNetworkConv
-elif modelConv_type == "Lagrange":
-    from score_models import LagrangeScoreKANConv as ScoreNetworkConv
-elif modelConv_type == "ReLU":
-    from score_models import ReluScoreKANConv as ScoreNetworkConv
-elif modelConv_type == "ReLULinear":
-    from score_models import ReluScoreKANLinear as ScoreNetworkConv
-elif modelConv_type == "SQuIRELS":
-    from score_models import SquirelsScoreNetworkConv as ScoreNetworkConv
-elif modelConv_type == "SQuIRELSLinear":
-    from score_models import SquirelsScoreNetworkLinear as ScoreNetworkConv
-elif modelConv_type == "WavKAN":
-    from score_models import WavScoreKANConv as ScoreNetworkConv
-else :
-    sys.exit("Selected convolution model does not exist.")
+# modelConv_type = args.conv_model
+# conv_elayers_dim = args.conv_elayers_dim
+# temb_dim = args.temb_dim
+# conv_dof = args.conv_dof
+# abs_path = args.abs_path
+# conv_model_iter = args.conv_model_iter
 
 
+def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim, en_model_iter,
+                          modelConv_type, conv_elayers_dim, temb_dim, conv_dof, conv_model_iter, 
+                          abs_path='/mnt/d/UFRGS/TCC/Dados/'):
+    ## ----------------------------------------------------------------------------------------------------
+    ## Define Models
+    ## ----------------------------------------------------------------------------------------------------
 
-##--------------------------------------------------------------------------------------------------------
+    ## Energy
+    if modelEnergy_type == "SQuIRELS":
+        from score_models import SquirelsScoreNetwork as ScoreNetworkEnergy
+    elif modelEnergy_type == "Bottleneck":
+        from score_models import BottleneckScoreKAGN as ScoreNetworkEnergy
+    elif modelEnergy_type == "Chebyshev":
+        from score_models import ChebyScoreKAN as ScoreNetworkEnergy
+    elif modelEnergy_type == "Fast":
+        from score_models import FastScoreKAN as ScoreNetworkEnergy
+    elif modelEnergy_type == "Gram":
+        from score_models import GramScoreKAN as ScoreNetworkEnergy
+    elif modelEnergy_type == "Lagrange":
+        from score_models import LagrangeScoreKAN as ScoreNetworkEnergy
+    elif modelEnergy_type == "ReLU":
+        from score_models import ReluScoreKAN as ScoreNetworkEnergy
+    elif modelEnergy_type == "Wav":
+        from score_models import WavScoreKAN as ScoreNetworkEnergy
+    else:
+        sys.exit("Selected energy model does not exist.")
+        
+    ## Conv
+    if modelConv_type == "Bottleneck":
+        from score_models import BottleneckScoreKAGNConv as ScoreNetworkConv
+    elif modelConv_type == "BottleneckKAGNAttentionConv":
+        from score_models import BottleneckScoreKAGNAttentionConv as ScoreNetworkConv
+    elif modelConv_type == "BottleneckKAGNLinear":
+        from score_models import BottleneckScoreKAGNLinear as ScoreNetworkConv
+    elif modelConv_type == "Chebyshev":
+        from score_models import ChebyScoreKANConv as ScoreNetworkConv
+    elif modelConv_type == "Fast":
+        from score_models import FastScoreKANConv as ScoreNetworkConv
+    elif modelConv_type == "FastLinear":
+        from score_models import FastScoreKANLinear as ScoreNetworkConv
+    elif modelConv_type == "FastWide":
+        from score_models import FastScoreKANConvWide as ScoreNetworkConv
+    elif modelConv_type == "Gram":
+        from score_models import GramScoreKANConv as ScoreNetworkConv
+    elif modelConv_type == "Lagrange":
+        from score_models import LagrangeScoreKANConv as ScoreNetworkConv
+    elif modelConv_type == "ReLU":
+        from score_models import ReluScoreKANConv as ScoreNetworkConv
+    elif modelConv_type == "ReLULinear":
+        from score_models import ReluScoreKANLinear as ScoreNetworkConv
+    elif modelConv_type == "SQuIRELS":
+        from score_models import SquirelsScoreNetworkConv as ScoreNetworkConv
+    elif modelConv_type == "SQuIRELSLinear":
+        from score_models import SquirelsScoreNetworkLinear as ScoreNetworkConv
+    elif modelConv_type == "WavKAN":
+        from score_models import WavScoreKANConv as ScoreNetworkConv
+    else :
+        sys.exit("Selected convolution model does not exist.")
 
-if __name__ == "__main__":
+
+
+    ##--------------------------------------------------------------------------------------------------------
 
     mpl.style.use('classic')
 
@@ -162,6 +163,47 @@ if __name__ == "__main__":
         conv_iter_list = range(1,20)
     else:
         conv_iter_list = [conv_model_iter]
+
+
+    ## ----------------------------------------------------------------------------------------------------
+    ## Plot parameters
+    ## ----------------------------------------------------------------------------------------------------
+    
+    line_style = {
+        'Geant4':'dotted',
+        'GFlash':'-',
+        full_modelEnergy_name:'-',
+        full_modelConv_name:'-',
+    }
+
+    colors = {
+        'Geant4':'black',
+        'GFlash':'red',
+        full_modelEnergy_name:'#2ca25f',
+        full_modelConv_name:'#7570b3',
+    }
+
+    rc('text', usetex=True)
+    rc('font', family='serif')
+    rc('font', size=22)
+    rc('xtick', labelsize=15)
+    rc('ytick', labelsize=15)
+    rc('legend', fontsize=15)
+
+    mpl.rcParams.update({'font.size': 19})
+    mpl.rcParams.update({'figure.titlesize': 11})
+    mpl.rcParams.update({'xtick.labelsize': 18})
+    mpl.rcParams.update({'ytick.labelsize': 18})
+    mpl.rcParams.update({'axes.labelsize': 18})
+    mpl.rcParams.update({'legend.frameon': False})
+    mpl.rcParams.update({'lines.linewidth': 2})
+
+    hep.style.use("CMS")
+
+    mpl.rcParams['text.usetex'] = False
+    plt.rcParams['axes.facecolor'] = 'white'
+    plt.rcParams['figure.facecolor'] = 'white'
+
 
 
     ## ----------------------------------------------------------------------------------------------------
@@ -615,8 +657,7 @@ if __name__ == "__main__":
                 fig.savefig(plots_dir_path + 'scatter_iter'+ str(i) + '.svg')
 
         if record_metrics:
-            print(emds)
-            print(err)
+            print(f"EMD: {emds} - Error: {err}")
             metrics = pd.concat([metrics, pd.DataFrame(emds, index=[i])])
             errors = pd.concat([errors, pd.DataFrame(err, index=[i])])
 
@@ -671,7 +712,7 @@ if __name__ == "__main__":
             init_ds = TensorDataset(init_sample, init_lable)
             init_dl = DataLoader(init_ds, batch_size=batch_size, shuffle=False)
             #init_dl = repeater(init_dl)
-            print(init_sample.shape)
+            # print(init_sample.shape)
 
             X_final = energy_voxel_g4
             Y_final = np.concatenate((energy_g4, energy_gflash, energy_particle_g4), 1)
@@ -756,7 +797,7 @@ if __name__ == "__main__":
                         'ex': np.linspace(0, 10,11),
                         }
 
-            print(data_full.shape)
+            # print(data_full.shape)
 
             ### Esum 1d ###
             feed_dict = {
