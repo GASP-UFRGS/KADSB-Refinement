@@ -135,9 +135,9 @@ def histogram(feed_dict,line_style,colors,xlabel='',ylabel='',reference_name='Tr
 
             
         if triangle:
-            print(plot)
+            # print(plot)
             d,err = emd(feed_dict[reference_name][:100000],feed_dict[plot][:100000],weights[plot][:100000])
-            print("EMD distance is: {}+-{}".format(d,err))
+            # print("EMD distance is: {}+-{}".format(d,err))
             #d = get_triangle_distance(dist,reference_hist,binning)
             #print("Triangular distance is: {0:.2g}".format(d))
             if not reference_name == plot:
@@ -205,7 +205,7 @@ def histogram(feed_dict,line_style,colors,xlabel='',ylabel='',reference_name='Tr
     for ip,plot in enumerate(feed_dict.keys()):
         out = out + (' & {0:.{1}f}'.format(d_list[ip], precision)) + '$\pm$' + ('{0:.{1}f}'.format(err_list[ip], precision))
     
-    print('{}, {} , {}: '.format(xlabel, title, plot) + out)
+    # print('{}, {} , {}: '.format(xlabel, title, plot) + out)
     
     out = ' ' 
     for ip,plot in enumerate(feed_dict.keys()):
@@ -216,7 +216,7 @@ def histogram(feed_dict,line_style,colors,xlabel='',ylabel='',reference_name='Tr
             precision = (len(temp))-2
         out = out + (' & {0:.{1}f}'.format(d_list[ip], precision)) + '(' + ('{0:.{1}f})'.format(err_list[ip], precision))[-2:]
     
-    print('{}, {} , {}: '.format(xlabel, title, plot) + out)
+    # print('{}, {} , {}: '.format(xlabel, title, plot) + out)
     
 
     if logy:
@@ -270,7 +270,9 @@ def scatter(xdata, ydata, data_label ,xlabel='',ylabel='',label_loc='best', titl
 
 def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim, en_model_iter,
                           modelConv_type, conv_elayers_dim, temb_dim, conv_dof, conv_model_iter, 
-                          abs_path='/mnt/d/UFRGS/TCC/Dados/'):
+                          abs_path='/media/marcelomd/HDD2/UFRGS/TCC/Dados', record_metrics = True,
+                          generate_plots = True, full_model_metrics = False):
+
     ## ----------------------------------------------------------------------------------------------------
     ## Define Models
     ## ----------------------------------------------------------------------------------------------------
@@ -322,7 +324,7 @@ def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim, en_model_it
         from score_models import SquirelsScoreNetworkConv as ScoreNetworkConv
     elif modelConv_type == "SQuIRELSLinear":
         from score_models import SquirelsScoreNetworkLinear as ScoreNetworkConv
-    elif modelConv_type == "WavKAN":
+    elif modelConv_type == "Wav":
         from score_models import WavScoreKANConv as ScoreNetworkConv
     else :
         sys.exit("Selected convolution model does not exist.")
@@ -336,11 +338,7 @@ def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim, en_model_it
     CUDA = True
     device = torch.device("cuda" if CUDA else "cpu")
 
-    abs_path = '/media/marcelomd/HDD2/UFRGS/TCC/Dados'
     data_dir_path = abs_path + '/datasets/SB_Refinement'
-
-    from score_models import ChebyScoreKAN as ScoreNetworkEnergy
-    from score_models import SquirelsScoreNetworkConv as ScoreNetworkConv
 
     ## ----------------------------------------------------------------------------------------------------
     ## Energy
@@ -348,34 +346,32 @@ def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim, en_model_it
     en_encoder_layers = [en_elayers_dim,en_elayers_dim]
     en_decoder_layers = [en_elayers_dim,en_elayers_dim]
     modelEnergy_version = f"{en_encoder_layers[0]}_{pos_dim}_{en_encoder_layers[0]}"
+
     ## ----------------------------------------------------------------------------------------------------
     ## Conv
     ## ----------------------------------------------------------------------------------------------------
     conv_encoder_layers = [conv_elayers_dim,conv_elayers_dim]
     modelConv_version = f"{conv_encoder_layers[0]}_{temb_dim}_{conv_dof}"
+
     ## ----------------------------------------------------------------------------------------------------
     ## Paths
     ## ----------------------------------------------------------------------------------------------------
-    models_energy_dir_path = f'{abs_path}/models/Energy/{modelEnergy_type}/{modelEnergy_version}/'#(original)
-    models_conv_dir_path = f'{abs_path}/models/Conv/{modelConv_type}/{modelConv_version}/'#(original)
+    models_energy_dir_path = f'{abs_path}/models/Energy/{modelEnergy_type}/{modelEnergy_version}/'
+    models_conv_dir_path = f'{abs_path}/models/Conv/{modelConv_type}/{modelConv_version}/'
 
     full_modelEnergy_name = f"{modelEnergy_type}_{modelEnergy_version}"
     full_modelConv_name = f"{modelConv_type}_{modelConv_version}"
 
-    plots_dir_path = f'{abs_path}/plots/{full_modelEnergy_name}_{full_modelConv_name}/'#(original)
-    metrics_dir_path = f'{abs_path}/metrics/{full_modelEnergy_name}_{full_modelConv_name}/'#(original)
+    plots_dir_path = f'{abs_path}/plots/{full_modelEnergy_name}_{full_modelConv_name}/'
+    metrics_dir_path = f'{abs_path}/metrics/{full_modelEnergy_name}_{full_modelConv_name}/'
 
-    record_metrics = True
-    generate_plots = True
-    full_model_metrics = False
-
-    if en_model_iter == 20:
+    if en_model_iter == -1:
         energy_iter_list = range(1,20)
     else:
         energy_iter_list = [en_model_iter]
     
     
-    if conv_model_iter == 20:
+    if conv_model_iter == -1:
         conv_iter_list = range(1,20)
     else:
         conv_iter_list = [conv_model_iter]
@@ -1156,3 +1152,5 @@ def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim, en_model_it
                                     xlabel='$e_{GF}$',ylabel='$e_{refined}$',
                                     label_loc='best',title='{:d} GeV'.format(energy))
             fig.savefig(plots_dir_path + 'scatter_{:d}GeV.svg'.format(energy))
+
+    return "Done!"

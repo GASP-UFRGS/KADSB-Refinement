@@ -461,7 +461,7 @@ def sample_data(dls, data, netsEnergy, netsConv, de, d, num_steps_voxel, num_ste
                 energy__shower_tot[:, k, :] = energy__shower_start
                 energy__shower_out[:, k, :] = (t_old - t_new)
                 #---------------------------------------------------------------------------------------------------#
-                netsEnergy_ts.append(t0-time.time())
+                netsEnergy_ts.append(time.time()-t0)
             
         energy__shower_tot = (energy__shower_tot * scaler_energy_g4_tensor) + shifter_energy_g4_tensor
         energy__shower_tot = energy__shower_tot * energy__particle.view(-1, 1, 1)
@@ -491,7 +491,7 @@ def sample_data(dls, data, netsEnergy, netsConv, de, d, num_steps_voxel, num_ste
                 x_tot[:, k, :] = x
                 out[:, k, :] = (t_old - t_new)
                 #---------------------------------------------------------------------------------------------------#
-                netsConv_ts.append(t0-time.time())
+                netsConv_ts.append(time.time()-t0)
         
         x_orig = x_orig * scaler_gflash_tensor + shifter_gflash_tensor
         x_orig = x_orig * energy__shower_orig
