@@ -1,7 +1,9 @@
 from collections import OrderedDict
 from copy import deepcopy
+import sys
 from sys import stderr
 import time
+from pathlib import Path
 
 import math
 import numpy as np
@@ -9,7 +11,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import nn
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, TensorDataset
 
 
 def grad_gauss(x, m, var):
@@ -362,7 +364,7 @@ def iterate_ipf(nets, opts, device, dls, gammas, npar, batch_size, num_steps, d,
 
 
 def sample_data(dls, data, netsEnergy, netsConv, de, d, num_steps_voxel, num_steps_energy, gammas_voxel, gammas_energy, device,
-                forward_or_backward = 'f', forward_or_backward_rev = 'b'):
+                forward_or_backward = 'f', forward_or_backward_rev = 'b', full_sample = True):
     
     shifter_energy_g4 = data['shifter_energy_g4']
     shifter_energy_gflash = data['shifter_energy_gflash']
@@ -472,51 +474,288 @@ def sample_data(dls, data, netsEnergy, netsConv, de, d, num_steps_voxel, num_ste
             
         y_current[:,1:2] = energy__shower_tot[:, iteration]
         
-        with torch.no_grad():
-            for k in range(num_iter_voxel):
-                gamma = gammas_voxel[k]
+        if full_sample:
+            with torch.no_grad():
+                for k in range(num_iter_voxel):
+                    gamma = gammas_voxel[k]
 
-                t0 = time.time()
-                #---------------------------------------------------------------------------------------------------#
-                t_old = x + netsConv[forward_or_backward_rev](x, steps_voxel[:, k, :], y_current, x)
+                    t0 = time.time()
+                    #---------------------------------------------------------------------------------------------------#
+                    t_old = x + netsConv[forward_or_backward_rev](x, steps_voxel[:, k, :], y_current, x)
 
-                if k == num_iter_voxel-1:
-                    x = t_old
-                else:
-                    z = torch.randn(x.shape, device=x.device)
-                    x = t_old + torch.sqrt(2 * gamma) * z
+                    if k == num_iter_voxel-1:
+                        x = t_old
+                    else:
+                        z = torch.randn(x.shape, device=x.device)
+                        x = t_old + torch.sqrt(2 * gamma) * z
 
-                t_new = x + netsConv[forward_or_backward_rev](x, steps_voxel[:, k, :], y_current,x )
-                
-                x_tot[:, k, :] = x
-                out[:, k, :] = (t_old - t_new)
-                #---------------------------------------------------------------------------------------------------#
-                netsConv_ts.append(time.time()-t0)
+                    t_new = x + netsConv[forward_or_backward_rev](x, steps_voxel[:, k, :], y_current,x )
+                    
+                    x_tot[:, k, :] = x
+                    out[:, k, :] = (t_old - t_new)
+                    #---------------------------------------------------------------------------------------------------#
+                    netsConv_ts.append(time.time()-t0)
         
+
         x_orig = x_orig * scaler_gflash_tensor + shifter_gflash_tensor
         x_orig = x_orig * energy__shower_orig
 
+        data_orig.append(x_orig.cpu().numpy())
+
         energy__shower_tot = (energy__shower_tot * scaler_energy_fullrange_g4_tensor) + shifter_energy_fullrange_g4_tensor
 
-        x_tot = (x_tot * scaler_g4_tensor) + shifter_g4_tensor
-
-        sum_old = torch.sum(x_tot, (2,3,4)).view(-1, x_tot.size(1), 1, 1, 1)
-        sum_new = energy__shower_tot[:,iteration].view(-1, 1, 1, 1, 1)
-        
-        x_tot = x_tot / sum_old * sum_new
-        
         y_current[:,1:2] = energy__shower_tot[:, iteration]
         y_current[:,0:1] = energy__shower_start
 
-        data_orig.append(x_orig.cpu().numpy())
-        data_x.append(x_tot.cpu().numpy())
         data_y.append(y_current.cpu().numpy())
-        
         data_energy_particle.append(energy__particle.cpu().numpy()*10.0)
 
-    return({"energy_voxel_gflash_orig":np.concatenate(data_orig, 0),
-            "energy_voxel_gflash_trafo":np.concatenate(data_x, 0),
-            "energy_gflash_trafo":np.concatenate(data_y, 0),
-            "energy_particle":np.concatenate(data_energy_particle, 0),
+
+        if full_sample:
+            x_tot = (x_tot * scaler_g4_tensor) + shifter_g4_tensor
+            sum_old = torch.sum(x_tot, (2,3,4)).view(-1, x_tot.size(1), 1, 1, 1)
+            sum_new = energy__shower_tot[:,iteration].view(-1, 1, 1, 1, 1)
+            x_tot = x_tot / sum_old * sum_new
+            data_x.append(x_tot.cpu().numpy())
+        else:
+            data_x = [np.zeros((2,2)),np.zeros((2,2))]
+
+
+    return({"energy_voxel_gflash_orig":np.concatenate(data_orig, 0), # used for En plot
+            "energy_voxel_gflash_trafo":np.concatenate(data_x, 0), 
+            "energy_gflash_trafo":np.concatenate(data_y, 0), # used for En plot
+            "energy_particle":np.concatenate(data_energy_particle, 0), # used for En plot
             "netsEnergy_ts":np.array(netsEnergy_ts),
             "netsConv_ts":np.array(netsConv_ts)})
+
+
+
+        ##----- Original -----##
+        # x_orig = x_orig * scaler_gflash_tensor + shifter_gflash_tensor
+        # x_orig = x_orig * energy__shower_orig
+
+        # energy__shower_tot = (energy__shower_tot * scaler_energy_fullrange_g4_tensor) + shifter_energy_fullrange_g4_tensor
+
+        # x_tot = (x_tot * scaler_g4_tensor) + shifter_g4_tensor
+
+        # sum_old = torch.sum(x_tot, (2,3,4)).view(-1, x_tot.size(1), 1, 1, 1)
+        # sum_new = energy__shower_tot[:,iteration].view(-1, 1, 1, 1, 1)
+        
+        # x_tot = x_tot / sum_old * sum_new
+        
+        # y_current[:,1:2] = energy__shower_tot[:, iteration]
+        # y_current[:,0:1] = energy__shower_start
+
+        # data_orig.append(x_orig.cpu().numpy())
+        # data_y.append(y_current.cpu().numpy())
+        
+        # data_x.append(x_tot.cpu().numpy())
+        # data_energy_particle.append(energy__particle.cpu().numpy()*10.0)
+
+
+def train_en_network(modelEnergy_type, enc_layers_dim, pos_dim, n_iter, abs_path = '/media/marcelomd/HDD2/UFRGS/TCC/Dados'):
+    
+    ## ----------------------------------------------------------------------------------------------------
+    ## Define Models
+    ## ----------------------------------------------------------------------------------------------------
+
+    ## Energy
+    if modelEnergy_type == "SQuIRELS":
+        from score_models import SquirelsScoreNetwork as ScoreNetworkEnergy
+    elif modelEnergy_type == "Bernstein":
+        from score_models import BernScoreKAN as ScoreNetworkEnergy
+    elif modelEnergy_type == "Bottleneck":
+        from score_models import BottleneckScoreKAGN as ScoreNetworkEnergy
+    elif modelEnergy_type == "Chebyshev":
+        from score_models import ChebyScoreKAN as ScoreNetworkEnergy
+    elif modelEnergy_type == "Fast":
+        from score_models import FastScoreKAN as ScoreNetworkEnergy
+    elif modelEnergy_type == "Gram":
+        from score_models import GramScoreKAN as ScoreNetworkEnergy
+    elif modelEnergy_type == "Jacobi":
+        from score_models import JacobiScoreKAN as ScoreNetworkEnergy
+    elif modelEnergy_type == "Lagrange":
+        from score_models import LagrangeScoreKAN as ScoreNetworkEnergy
+    elif modelEnergy_type == "ReLU":
+        from score_models import ReluScoreKAN as ScoreNetworkEnergy
+    elif modelEnergy_type == "Wav":
+        from score_models import WavScoreKAN as ScoreNetworkEnergy
+    else:
+        sys.exit("Selected energy model does not exist.")
+
+
+    CUDA = True
+    device = torch.device("cuda" if CUDA else "cpu")
+
+    suffix = 'GFlash_Energy'
+
+    num_steps = 20
+    n = num_steps//2
+    batch_size = 1024*16
+    lr = 1e-5
+    n_iter_glob = 50
+
+    gamma_max = 0.001
+    gamma_min = 0.001
+    gamma_half = np.linspace(gamma_min, gamma_max, n)
+    gammas = np.concatenate([gamma_half, np.flip(gamma_half)])
+    gammas = torch.tensor(gammas).to(device)
+    T = torch.sum(gammas)
+
+    # encoder_layers=[256,256]
+    # pos_dim=128
+    # decoder_layers=[256,256]
+
+    normalize_energy=True
+    # model_version = f"_{encoder_layers[0]}_{pos_dim}_{decoder_layers[0]}_"
+
+    data_dir_path = f"{abs_path}/datasets/SB_Refinement/"
+    models_dir_path = f"{abs_path}/repos/sb_ref_kan/models/Energy/{modelEnergy_type}/{enc_layers_dim}_{pos_dim}_{enc_layers_dim}"
+    logs_path = f"{abs_path}/repos/sb_ref_kan/models/Energy/EnergyLogs"
+
+    Path(models_dir_path).mkdir(parents=True, exist_ok=True)
+
+
+    file_path_gflash = data_dir_path + 'run_GFlash01_100k_10_100GeV_full.npy'
+    file_path_g4 = data_dir_path + 'run_Geant_100k_10_100GeV_full.npy'
+
+    data = load_data(file_path_gflash, file_path_g4, normalize_energy=True, shuffle=True, plotting=False)
+
+    energy_gflash = data["energy_gflash"]
+    energy_particle_gflash = data["energy_particle_gflash"]
+    energy_voxel_gflash = data["energy_voxel_gflash"]
+    energy_g4 = data["energy_g4"]
+    energy_particle_g4 = data["energy_particle_g4"]
+    energy_voxel_g4 = data["energy_voxel_g4"]
+
+    npar = int(energy_voxel_g4.shape[0])
+                
+    X_init = energy_gflash
+    Y_init = energy_particle_gflash
+    init_sample = torch.tensor(X_init)#.view(X_init.shape[0], 1, 10, 10)
+    init_lable = torch.tensor(Y_init)
+    init_ds = TensorDataset(init_sample, init_lable)
+    init_dl = DataLoader(init_ds, batch_size=batch_size, shuffle=False)
+    #init_dl = repeater(init_dl)
+    # print(init_sample.shape)
+
+    X_final = energy_g4
+    Y_final = energy_particle_g4
+    final_sample = torch.tensor(X_final)#.view(X_final.shape[0], 1, 10, 10)
+    final_label = torch.tensor(Y_final)
+    final_ds = TensorDataset(final_sample, final_label)
+    final_dl = DataLoader(final_ds, batch_size=batch_size, shuffle=False)
+    #final_dl = repeater(final_dl)
+
+    #mean_final = torch.tensor(0.)
+    #var_final = torch.tensor(1.*10**3) #infty like
+
+    mean_final = torch.zeros(final_sample.size(-1)).to(device)
+    var_final = 1.*torch.ones(final_sample.size(-1)).to(device)
+
+    # print(final_sample.shape)
+    # print(mean_final.shape)
+    # print(var_final.shape)
+
+    dls = {'f': init_dl, 'b': final_dl}
+
+    # from score_models import FastScoreKAN as ScoreNetworkEnergy
+
+    i1 = enc_layers_dim
+    i2 = pos_dim
+    encoder_layers=[i1,i1]
+    pos_dim=i2
+    decoder_layers=[i1,i1]
+
+    model_version = f"{encoder_layers[0]}_{pos_dim}_{decoder_layers[0]}"
+
+    model_f = ScoreNetworkEnergy(encoder_layers=encoder_layers,
+                                pos_dim=pos_dim,
+                                decoder_layers=decoder_layers,
+                                n_cond = init_lable.size(1)).to(device)
+
+    print(f"{modelEnergy_type}{model_version[:-1]}: {sum(p.numel() for p in model_f.parameters())} parameters")
+
+    model_f = ScoreNetworkEnergy(encoder_layers=encoder_layers,
+                                pos_dim=pos_dim,
+                                decoder_layers=decoder_layers,
+                                n_cond = init_lable.size(1)).to(device)
+
+    model_b = ScoreNetworkEnergy(encoder_layers=encoder_layers,
+                                pos_dim=pos_dim,
+                                decoder_layers=decoder_layers,
+                                n_cond = init_lable.size(1)).to(device)
+
+    model_name = str(model_f.__class__)[21:-2]
+
+    model_f = torch.nn.DataParallel(model_f)
+    model_b = torch.nn.DataParallel(model_b)
+
+    opt_f = torch.optim.Adam(model_f.parameters(), lr=lr)
+    opt_b = torch.optim.Adam(model_b.parameters(), lr=lr)
+
+    net_f = EMA(model=model_f, decay=0.95).to(device)
+    net_b = EMA(model=model_b, decay=0.95).to(device)
+
+    nets  = {'f': net_f, 'b': net_b, 'iter_loss': [], 'iter_et': [] }
+    opts  = {'f': opt_f, 'b': opt_b }
+
+    nets['f'].train()
+    nets['b'].train()
+
+
+    d = init_sample[0].shape  # shape of object to diffuse
+    dy = init_lable[0].shape  # shape of object to diffuse
+    # print(d)
+    # print(dy)
+
+    #print(net_f)
+
+
+    f = open(f"{logs_path}/{model_name}_{model_version}_.txt", 'w', encoding="utf-8")
+    f.write("loss;elapsed_time;iteration\n")
+
+    start_iter=0
+
+    for i in range(1, 100):
+        try:
+            nets['f'].load_state_dict(torch.load(f"{models_dir_path}/Iter{i}_net_f_{suffix}_{model_name}_{model_version}_.pth", map_location=device))
+            nets['b'].load_state_dict(torch.load(f"{models_dir_path}/Iter{i}_net_b_{suffix}_{model_name}_{model_version}_.pth", map_location=device))
+            
+            start_iter = i
+        except:
+            continue
+
+    if start_iter == 0:
+        iterate_ipf(nets=nets, opts=opts, device=device, dls=dls, gammas=gammas, npar=npar, batch_size=batch_size,
+                    num_steps=num_steps, d=d, dy=dy, T=T, mean_final=mean_final, var_final=var_final, n_iter=100,
+                    forward_or_backward='f', forward_or_backward_rev='b', first=True)
+        for l, t in zip(nets['iter_loss'],nets['iter_et']):
+            f.write(f"{l:.6f};{t:.2f};0\n")
+        print('--------------- Done iter 0 ---------------')
+        
+    nets['f'].train()
+    nets['b'].train()
+
+    for i in range(start_iter+1, start_iter+n_iter):
+
+        iterate_ipf(nets=nets, opts=opts, device=device, dls=dls, gammas=gammas, npar=npar, batch_size=batch_size,
+                    num_steps=num_steps, d=d, dy=dy, T=T, mean_final=mean_final, var_final=var_final, n_iter=n_iter_glob,
+                    forward_or_backward='b', forward_or_backward_rev='f', first=False)
+        for l, t in zip(nets['iter_loss'],nets['iter_et']):
+            f.write(f"{l:.6f};{t:.2f};{i}\n")
+        print('--------------- Done iter B{:d} ---------------'.format(i))
+
+        iterate_ipf(nets=nets, opts=opts, device=device, dls=dls, gammas=gammas, npar=npar, batch_size=batch_size,
+                    num_steps=num_steps, d=d, dy=dy, T=T, mean_final=mean_final, var_final=var_final, n_iter=n_iter_glob,
+                    forward_or_backward='f', forward_or_backward_rev='b', first=False)
+        for l, t in zip(nets['iter_loss'],nets['iter_et']):
+            f.write(f"{l:.6f};{t:.2f};{i}\n")
+        print('--------------- Done iter F{:d} ---------------'.format(i))
+
+        torch.save(net_f.state_dict(), f"{models_dir_path}/Iter{i}_net_f_{suffix}_{model_name}_{model_version}_.pth")
+        torch.save(net_b.state_dict(), f"{models_dir_path}/Iter{i}_net_b_{suffix}_{model_name}_{model_version}_.pth")
+
+    f.close()
+
+    return 0
