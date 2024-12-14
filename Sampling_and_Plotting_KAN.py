@@ -12,61 +12,73 @@ args = parser.parse_args()
 debug = args.debug
 
 # # !!!!!!!!!! "Lagrange_128_8_128":{"modelEnergy_type":"Lagrange","en_elayers_dim":128,"pos_dim":8,"en_model_iter":-1},
-#                   "Bernstein_128_8_128":{"modelEnergy_type":"Bernstein","en_elayers_dim":128,"pos_dim":8,"en_model_iter":-1},
-#                   "Bernstein_128_64_128":{"modelEnergy_type":"Bernstein","en_elayers_dim":128,"pos_dim":64,"en_model_iter":-1},
-#                   "Bottleneck_128_64_128":{"modelEnergy_type":"Bottleneck","en_elayers_dim":128,"pos_dim":64,"en_model_iter":-1},
-#                   "Chebyshev_128_64_128":{"modelEnergy_type":"Chebyshev","en_elayers_dim":128,"pos_dim":64,"en_model_iter":-1},
-#                   "Fast_128_64_128":{"modelEnergy_type":"Fast","en_elayers_dim":128,"pos_dim":64,"en_model_iter":-1},
-#                   "Gram_128_64_128":{"modelEnergy_type":"Gram","en_elayers_dim":128,"pos_dim":64,"en_model_iter":-1},
-#                   "Jacobi_128_8_128":{"modelEnergy_type":"Jacobi","en_elayers_dim":128,"pos_dim":8,"en_model_iter":-1},
-#                   "Jacobi_128_64_128":{"modelEnergy_type":"Jacobi","en_elayers_dim":128,"pos_dim":64,"en_model_iter":-1},
-#                   "Jacobi_256_128_256":{"modelEnergy_type":"Jacobi","en_elayers_dim":256,"pos_dim":128,"en_model_iter":-1},
-#                   "Lagrange_128_8_128":{"modelEnergy_type":"Lagrange","en_elayers_dim":128,"pos_dim":8,"en_model_iter":-1},
-#                   "Lagrange_128_64_128":{"modelEnergy_type":"Lagrange","en_elayers_dim":128,"pos_dim":64,"en_model_iter":-1},
-#                   "ReLU_128_8_128":{"modelEnergy_type":"ReLU","en_elayers_dim":128,"pos_dim":8,"en_model_iter":-1},
-#                   "ReLU_128_64_128":{"modelEnergy_type":"ReLU","en_elayers_dim":128,"pos_dim":64,"en_model_iter":-1},
-                  
+# "Bernstein_128_8_128":{"modelEnergy_type":"Bernstein","en_elayers_dim":128,"pos_dim":8,"en_model_iter":-1},
+# "Bernstein_128_64_128":{"modelEnergy_type":"Bernstein","en_elayers_dim":128,"pos_dim":64,"en_model_iter":-1},
+# "Bottleneck_128_64_128":{"modelEnergy_type":"Bottleneck","en_elayers_dim":128,"pos_dim":64,"en_model_iter":-1},
+# "Chebyshev_128_64_128":{"modelEnergy_type":"Chebyshev","en_elayers_dim":128,"pos_dim":64,"en_model_iter":-1},
+# "Fast_128_64_128":{"modelEnergy_type":"Fast","en_elayers_dim":128,"pos_dim":64,"en_model_iter":-1},
+# "Gram_128_64_128":{"modelEnergy_type":"Gram","en_elayers_dim":128,"pos_dim":64,"en_model_iter":-1},
+# "Jacobi_128_8_128":{"modelEnergy_type":"Jacobi","en_elayers_dim":128,"pos_dim":8,"en_model_iter":-1},
+# "Jacobi_128_64_128":{"modelEnergy_type":"Jacobi","en_elayers_dim":128,"pos_dim":64,"en_model_iter":-1},
+# "Jacobi_256_128_256":{"modelEnergy_type":"Jacobi","en_elayers_dim":256,"pos_dim":128,"en_model_iter":-1},
+# "Lagrange_128_8_128":{"modelEnergy_type":"Lagrange","en_elayers_dim":128,"pos_dim":8,"en_model_iter":-1},
+# "Lagrange_128_64_128":{"modelEnergy_type":"Lagrange","en_elayers_dim":128,"pos_dim":64,"en_model_iter":-1},
+# "ReLU_128_8_128":{"modelEnergy_type":"ReLU","en_elayers_dim":128,"pos_dim":8,"en_model_iter":-1},
+# "ReLU_128_64_128":{"modelEnergy_type":"ReLU","en_elayers_dim":128,"pos_dim":64,"en_model_iter":-1},
+# "Fast_256_32_256":{"modelEnergy_type":"Fast","en_elayers_dim":256,"pos_dim":32,"en_model_iter":[1]},
+# "Fast_256_8_256":{"modelEnergy_type":"Fast","en_elayers_dim":256,"pos_dim":8,"en_model_iter":[1]},
+# "Fast_128_128_128":{"modelEnergy_type":"Fast","en_elayers_dim":128,"pos_dim":128,"en_model_iter":[1]},
+# "Fast_128_32_128":{"modelEnergy_type":"Fast","en_elayers_dim":128,"pos_dim":32,"en_model_iter":[1]},
+# "Fast_16_128_16":{"modelEnergy_type":"Fast","en_elayers_dim":16,"pos_dim":128,"en_model_iter":[1]},
+# "Fast_16_32_16":{"modelEnergy_type":"Fast","en_elayers_dim":16,"pos_dim":32,"en_model_iter":[1]}
+# "Fast_16_8_16":{"modelEnergy_type":"Fast","en_elayers_dim":16,"pos_dim":8,"en_model_iter":-1},
+# "Fast_16_8_16":{"modelEnergy_type":"Fast","en_elayers_dim":16,"pos_dim":8,"en_model_iter":-1},
 
 
-en_models_dict = {"Bernstein_16_8_16":{"modelEnergy_type":"Bernstein","en_elayers_dim":16,"pos_dim":8,"en_model_iter":-1},
-                  "Chebyshev_16_8_16":{"modelEnergy_type":"Chebyshev","en_elayers_dim":16,"pos_dim":8,"en_model_iter":-1},
-                  "Gram_16_8_16":{"modelEnergy_type":"Gram","en_elayers_dim":16,"pos_dim":8,"en_model_iter":-1},
-                  "Jacobi_16_8_16":{"modelEnergy_type":"Jacobi","en_elayers_dim":16,"pos_dim":8,"en_model_iter":-1},
-                  "Lagrange_16_8_16":{"modelEnergy_type":"Lagrange","en_elayers_dim":16,"pos_dim":8,"en_model_iter":-1}}
+en_models_dict = {"Chebyshev_16_8_16":{"modelEnergy_type":"Chebyshev","en_elayers_dim":16,"pos_dim":8,"en_model_iter":-1},
+                  "SQuIRELS_256_128_256":{"modelEnergy_type":"SQuIRELS","en_elayers_dim":256,"pos_dim":128,"en_model_iter":-1}}
+
+# "Bottleneck_256_128_2":{"modelConv_type":"Bottleneck", "conv_elayers_dim":256, "temb_dim":128, "conv_dof":2, "conv_model_iter":-1},
+# "Bottleneck_256_128_2":{"modelConv_type":"Bottleneck", "conv_elayers_dim":256, "temb_dim":128, "conv_dof":2, "conv_model_iter":-1},
+# "Bottleneck_128_8_2":{"modelConv_type":"Bottleneck", "conv_elayers_dim":128, "temb_dim":8, "conv_dof":2, "conv_model_iter":-1},
+# "BottleneckKAGNAttentionConv_16_8_1":{"modelConv_type":"BottleneckKAGNAttentionConv", "conv_elayers_dim":16, "temb_dim":8, "conv_dof":1, "conv_model_iter":-1},
+# "BottleneckKAGNLinear_256_128_32":{"modelConv_type":"BottleneckKAGNLinear", "conv_elayers_dim":256, "temb_dim":128, "conv_dof":32, "conv_model_iter":-1},
+# "BottleneckKAGNLinear_128_8_4":{"modelConv_type":"BottleneckKAGNLinear", "conv_elayers_dim":128, "temb_dim":8, "conv_dof":4, "conv_model_iter":-1},
+# "Chebyshev_256_128_8":{"modelConv_type":"Chebyshev", "conv_elayers_dim":256, "temb_dim":128, "conv_dof":8, "conv_model_iter":-1},
+# "Chebyshev_128_8_4":{"modelConv_type":"Chebyshev", "conv_elayers_dim":128, "temb_dim":8, "conv_dof":4, "conv_model_iter":-1},
+# "Fast_256_128_4":{"modelConv_type":"Fast", "conv_elayers_dim":256, "temb_dim":128, "conv_dof":4, "conv_model_iter":-1},
+# "Fast_128_8_4":{"modelConv_type":"Fast", "conv_elayers_dim":128, "temb_dim":8, "conv_dof":4, "conv_model_iter":-1},
+# "FastLinear_256_128_32":{"modelConv_type":"FastLinear", "conv_elayers_dim":256, "temb_dim":128, "conv_dof":32, "conv_model_iter":-1},
+# "FastLinear_128_8_4":{"modelConv_type":"FastLinear", "conv_elayers_dim":128, "temb_dim":8, "conv_dof":4, "conv_model_iter":-1},
+# "FastWide_128_8_4":{"modelConv_type":"FastWide", "conv_elayers_dim":128, "temb_dim":8, "conv_dof":4, "conv_model_iter":-1},
+# "Gram_16_8_1":{"modelConv_type":"Gram", "conv_elayers_dim":16, "temb_dim":8, "conv_dof":1, "conv_model_iter":-1},
+# "Lagrange_16_8_1":{"modelConv_type":"Lagrange", "conv_elayers_dim":16, "temb_dim":8, "conv_dof":1, "conv_model_iter":-1},
+# "ReLU_256_128_4":{"modelConv_type":"ReLU", "conv_elayers_dim":256, "temb_dim":128, "conv_dof":4, "conv_model_iter":-1},
+# "ReLU_128_8_4":{"modelConv_type":"ReLU", "conv_elayers_dim":128, "temb_dim":8, "conv_dof":4, "conv_model_iter":-1},
+# "ReLULinear_128_8_4":{"modelConv_type":"ReLULinear", "conv_elayers_dim":128, "temb_dim":8, "conv_dof":4, "conv_model_iter":-1},
+# "SQuIRELS_16_8_2":{"modelConv_type":"SQuIRELS", "conv_elayers_dim":16, "temb_dim":8, "conv_dof":2, "conv_model_iter":-1},
+# "SQuIRELSLinear_256_128_32":{"modelConv_type":"SQuIRELSLinear", "conv_elayers_dim":256, "temb_dim":128, "conv_dof":32, "conv_model_iter":-1},
+# "SQuIRELSLinear_128_8_4":{"modelConv_type":"SQuIRELSLinear", "conv_elayers_dim":128, "temb_dim":8, "conv_dof":4, "conv_model_iter":-1},                  
+# "Bottleneck_16_8_2":{"modelConv_type":"Bottleneck","conv_elayers_dim":16,"temb_dim":8,"conv_dof":2,"conv_model_iter":-1}
+# "Fast_16_8_4":{"modelConv_type":"Fast","conv_elayers_dim":16,"temb_dim":8,"conv_dof":4,"conv_model_iter":-1},
+# "Chebyshev_16_8_8":{"modelConv_type":"Chebyshev","conv_elayers_dim":16,"temb_dim":8,"conv_dof":8,"conv_model_iter":-1},
+# "ReLU_16_8_4":{"modelConv_type":"ReLU","conv_elayers_dim":16,"temb_dim":8,"conv_dof":4,"conv_model_iter":-1}}
 
 
+# "Bernstein_16_8_1":{"modelConv_type":"Bernstein","conv_elayers_dim":16,"temb_dim":8,"conv_dof":1,"conv_model_iter":-1},
+# "Jacobi_16_8_1":{"modelConv_type":"Jacobi","conv_elayers_dim":16,"temb_dim":8,"conv_dof":1,"conv_model_iter":-1},
+# "Wav_16_8_4":{"modelConv_type":"Wav","conv_elayers_dim":16,"temb_dim":8,"conv_dof":4,"conv_model_iter":-1}                    
 
 
-conv_models_dict = {"Bottleneck_256_128_2":{"modelConv_type":"Bottleneck", "conv_elayers_dim":256, "temb_dim":128, "conv_dof":2, "conv_model_iter":-1},
-                    "Bottleneck_128_8_2":{"modelConv_type":"Bottleneck", "conv_elayers_dim":128, "temb_dim":8, "conv_dof":2, "conv_model_iter":-1},
-                    "BottleneckKAGNAttentionConv_16_8_1":{"modelConv_type":"BottleneckKAGNAttentionConv", "conv_elayers_dim":16, "temb_dim":8, "conv_dof":1, "conv_model_iter":-1},
-                    "BottleneckKAGNLinear_256_128_32":{"modelConv_type":"BottleneckKAGNLinear", "conv_elayers_dim":256, "temb_dim":128, "conv_dof":32, "conv_model_iter":-1},
-                    "BottleneckKAGNLinear_128_8_4":{"modelConv_type":"BottleneckKAGNLinear", "conv_elayers_dim":128, "temb_dim":8, "conv_dof":4, "conv_model_iter":-1},
-                    "Chebyshev_256_128_8":{"modelConv_type":"Chebyshev", "conv_elayers_dim":256, "temb_dim":128, "conv_dof":8, "conv_model_iter":-1},
-                    "Chebyshev_128_8_4":{"modelConv_type":"Chebyshev", "conv_elayers_dim":128, "temb_dim":8, "conv_dof":4, "conv_model_iter":-1},
-                    "Fast_256_128_4":{"modelConv_type":"Fast", "conv_elayers_dim":256, "temb_dim":128, "conv_dof":4, "conv_model_iter":-1},
-                    "Fast_128_8_4":{"modelConv_type":"Fast", "conv_elayers_dim":128, "temb_dim":8, "conv_dof":4, "conv_model_iter":-1},
-                    "FastLinear_256_128_32":{"modelConv_type":"FastLinear", "conv_elayers_dim":256, "temb_dim":128, "conv_dof":32, "conv_model_iter":-1},
-                    "FastLinear_128_8_4":{"modelConv_type":"FastLinear", "conv_elayers_dim":128, "temb_dim":8, "conv_dof":4, "conv_model_iter":-1},
-                    "FastWide_128_8_4":{"modelConv_type":"FastWide", "conv_elayers_dim":128, "temb_dim":8, "conv_dof":4, "conv_model_iter":-1},
-                    "Gram_16_8_1":{"modelConv_type":"Gram", "conv_elayers_dim":16, "temb_dim":8, "conv_dof":1, "conv_model_iter":-1},
-                    "Lagrange_16_8_1":{"modelConv_type":"Lagrange", "conv_elayers_dim":16, "temb_dim":8, "conv_dof":1, "conv_model_iter":-1},
-                    "ReLU_256_128_4":{"modelConv_type":"ReLU", "conv_elayers_dim":256, "temb_dim":128, "conv_dof":4, "conv_model_iter":-1},
-                    "ReLU_128_8_4":{"modelConv_type":"ReLU", "conv_elayers_dim":128, "temb_dim":8, "conv_dof":4, "conv_model_iter":-1},
-                    "ReLULinear_128_8_4":{"modelConv_type":"ReLULinear", "conv_elayers_dim":128, "temb_dim":8, "conv_dof":4, "conv_model_iter":-1},
-                    "SQuIRELS_256_128_32":{"modelConv_type":"SQuIRELS", "conv_elayers_dim":256, "temb_dim":128, "conv_dof":32, "conv_model_iter":-1},
-                    "SQuIRELS_16_8_2":{"modelConv_type":"SQuIRELS", "conv_elayers_dim":16, "temb_dim":8, "conv_dof":2, "conv_model_iter":-1},
-                    "SQuIRELSLinear_256_128_32":{"modelConv_type":"SQuIRELSLinear", "conv_elayers_dim":256, "temb_dim":128, "conv_dof":32, "conv_model_iter":-1},
-                    "SQuIRELSLinear_128_8_4":{"modelConv_type":"SQuIRELSLinear", "conv_elayers_dim":128, "temb_dim":8, "conv_dof":4, "conv_model_iter":-1},
-                    "Wav":{"modelConv_type":"Wav", "conv_elayers_dim":128, "temb_dim":8, "conv_dof":2, "conv_model_iter":-1}}
+conv_models_dict = {"Bernstein_16_8_1":{"modelConv_type":"Bernstein","conv_elayers_dim":16,"temb_dim":8,"conv_dof":1,"conv_model_iter":-1}}
 
-sel_en_models = en_models_dict.keys()#["SQuIRELS_256_128_256","Fast_16_8_16"]
-sel_conv_models = ["SQuIRELS_256_128_32"]#conv_models_dict.keys()#["SQuIRELS_256_128_32"]
+sel_en_models = en_models_dict.keys()#["Chebyshev_16_8_16"]#["SQuIRELS_256_128_256","Fast_16_8_16"] en_models_dict.keys()
+sel_conv_models = conv_models_dict.keys()#["SQuIRELS_256_128_32"]#
 
 record_metrics = True
 generate_plots = True
-full_model_metrics = False
-energy_intervals = True
+full_model_metrics = True
+energy_intervals = False
 cuda = True
 
 if __name__ == "__main__":

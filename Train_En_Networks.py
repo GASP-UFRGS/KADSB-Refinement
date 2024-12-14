@@ -26,14 +26,20 @@ debug = args.debug
 # "Lagrange_128_64_128":{"modelEnergy_type":"Lagrange","en_elayers_dim":128,"pos_dim":64},
 # "ReLU_128_8_128":{"modelEnergy_type":"ReLU","en_elayers_dim":128,"pos_dim":8},
 # "ReLU_128_64_128":{"modelEnergy_type":"ReLU","en_elayers_dim":128,"pos_dim":64},
+# "Bernstein_16_8_16":{"modelEnergy_type":"Bernstein","en_elayers_dim":16,"pos_dim":8},
+# "Chebyshev_16_8_16":{"modelEnergy_type":"Chebyshev","en_elayers_dim":16,"pos_dim":8},
+# "Gram_16_8_16":{"modelEnergy_type":"Gram","en_elayers_dim":16,"pos_dim":8},
+# "Jacobi_16_8_16":{"modelEnergy_type":"Jacobi","en_elayers_dim":16,"pos_dim":8},
+# "Lagrange_16_8_16":{"modelEnergy_type":"Lagrange","en_elayers_dim":16,"pos_dim":8}
                                  
                   
 
-en_models_dict = {"Bernstein_16_8_16":{"modelEnergy_type":"Bernstein","en_elayers_dim":16,"pos_dim":8},
-                  "Chebyshev_16_8_16":{"modelEnergy_type":"Chebyshev","en_elayers_dim":16,"pos_dim":8},
-                  "Gram_16_8_16":{"modelEnergy_type":"Gram","en_elayers_dim":16,"pos_dim":8},
-                  "Jacobi_16_8_16":{"modelEnergy_type":"Jacobi","en_elayers_dim":16,"pos_dim":8},
-                  "Lagrange_16_8_16":{"modelEnergy_type":"Lagrange","en_elayers_dim":16,"pos_dim":8}}
+en_models_dict = {"Fast_256_32_256":{"modelEnergy_type":"Fast","en_elayers_dim":256,"pos_dim":32},
+                  "Fast_256_8_256":{"modelEnergy_type":"Fast","en_elayers_dim":256,"pos_dim":8},
+                  "Fast_128_128_128":{"modelEnergy_type":"Fast","en_elayers_dim":128,"pos_dim":128},
+                  "Fast_128_32_128":{"modelEnergy_type":"Fast","en_elayers_dim":128,"pos_dim":32},
+                  "Fast_16_128_16":{"modelEnergy_type":"Fast","en_elayers_dim":16,"pos_dim":128},
+                  "Fast_16_32_16":{"modelEnergy_type":"Fast","en_elayers_dim":16,"pos_dim":32}}
 
 sel_en_models = en_models_dict.keys()
 
