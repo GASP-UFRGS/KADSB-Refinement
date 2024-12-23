@@ -102,9 +102,9 @@ def triangle_distance(x,y,binning):
         dist+=0.5*w[ib]*(x[ib] - y[ib])**2/(x[ib] + y[ib]) if x[ib] + y[ib] >0 else 0.0
     return dist*1e3
         
-def histogram(feed_dict,line_style,colors,xlabel='',ylabel='',reference_name='Truth',logy=False,binning=None,
+def histogram(feed_dict,emds,errs,line_style,colors,xlabel='',ylabel='',reference_name='Truth',logy=False,binning=None,
               label_loc='best',plot_ratio=False,weights=None,uncertainty=None,triangle=True,
-              y_lim_ratio=[0.5,1.5], title='', density=True, y_range=None):
+              y_lim_ratio=[0.5,1.5], title='', density=True, y_range=None, metric_name=''):
     
     assert reference_name in feed_dict.keys(), "ERROR: Don't know the reference distribution"
 
@@ -138,23 +138,23 @@ def histogram(feed_dict,line_style,colors,xlabel='',ylabel='',reference_name='Tr
             
         if triangle:
             # print(plot)
-            d,err = emd(feed_dict[reference_name][:100000],feed_dict[plot][:100000],weights[plot][:100000])
+            emds[f"{metric_name}_{plot}"],errs[f"{metric_name}_{plot}"] = emd(feed_dict[reference_name][:100000],feed_dict[plot][:100000],weights[plot][:100000])
             # print("EMD distance is: {}+-{}".format(d,err))
             #d = get_triangle_distance(dist,reference_hist,binning)
             #print("Triangular distance is: {0:.2g}".format(d))
             if not reference_name == plot:
                 #label_list.append(plot + ' EMD: {0:.2g} $\pm$ {1:.2g}'.format(d, err))
                 #label_list.append(plot)
-                d_list.append(d)
+                d_list.append(emds[f"{metric_name}_{plot}"])
                 #label_list.append(' $\pm$ ')
-                err_list.append(err)
+                err_list.append(errs[f"{metric_name}_{plot}"])
                 
             if reference_name == plot:
                 #label_list.append(plot + ' EMD: {0:.2g} $\pm$ {1:.2g}'.format(d, err))
                 #label_list.append(plot)
-                d_list.append(d)
+                d_list.append(emds[f"{metric_name}_{plot}"])
                 #label_list.append(' $\pm$ ')
-                err_list.append(err)
+                err_list.append(errs[f"{metric_name}_{plot}"])
                 #label_list.append(plot)
 
             
@@ -252,7 +252,7 @@ def histogram(feed_dict,line_style,colors,xlabel='',ylabel='',reference_name='Tr
         ax0.ticklabel_format(useOffset=False)
     except:
         pass
-    return fig,ax0
+    return fig,ax0,emds,errs
 
 def scatter(xdata, ydata, data_label ,xlabel='',ylabel='',label_loc='best', title=''):
 
@@ -272,9 +272,10 @@ def scatter(xdata, ydata, data_label ,xlabel='',ylabel='',label_loc='best', titl
 def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim,
                           modelConv_type, conv_elayers_dim, temb_dim, conv_dof,
                           en_model_iter=-1, conv_model_iter=-1, 
-                          abs_path='/media/marcelomd/HDD2/UFRGS/TCC/Dados', record_metrics = True,
+                          abs_path='/mnt/f/UFRGS/TCC/Dados', record_metrics = True,
                           generate_plots = True, full_model_metrics = False, energy_intervals = False,
-                          cuda = True):
+                          cuda = True, esum1d=False, esumfrac1d=False, esum=False, emax=False, espec=False,
+                          especnorm=False, nhit=False, ex=False, ey=False):
 
     ## ----------------------------------------------------------------------------------------------------
     ## Define Models
@@ -309,7 +310,7 @@ def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim,
         from score_models import BernScoreKANConv as ScoreNetworkConv
     elif modelConv_type == "Bottleneck":
         from score_models import BottleneckScoreKAGNConv as ScoreNetworkConv
-    elif modelConv_type == "BottleneckKAGNAttentionConv":
+    elif modelConv_type == "BottleneckAttention":
         from score_models import BottleneckScoreKAGNAttentionConv as ScoreNetworkConv
     elif modelConv_type == "BottleneckKAGNLinear":
         from score_models import BottleneckScoreKAGNLinear as ScoreNetworkConv
@@ -379,11 +380,11 @@ def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim,
     full_modelEnergy_name = f"{modelEnergy_type}_{modelEnergy_version}"
     full_modelConv_name = f"{modelConv_type}_{modelConv_version}"
 
-    plots_dir_path = f'{abs_path}/plots/{full_modelEnergy_name}_{full_modelConv_name}/'
+    plots_dir_path = f'{abs_path}/cpu/plots/Full_Models/{full_modelEnergy_name}_{full_modelConv_name}/'
     if full_model_metrics:
-        metrics_dir_path = f'{abs_path}/metrics/full_model_metrics/' #{full_modelEnergy_name}_{full_modelConv_name}/'
+        metrics_dir_path = f'{abs_path}/cpu/metrics/full_model_metrics/' #{full_modelEnergy_name}_{full_modelConv_name}/'
     else:
-        metrics_dir_path = f'{abs_path}/metrics/en_metrics/'
+        metrics_dir_path = f'{abs_path}/cpu/metrics/en_metrics/'
 
     if en_model_iter == -1:
         energy_iter_list = range(1,10)
@@ -631,6 +632,7 @@ def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim,
                                     n_cond = 1).to(device)
 
     modelEnergy_name = str(modelEnergy_f.__class__)[21:-2]
+    print(modelEnergy_name)
 
     ## Conv
     modelConv_f = ScoreNetworkConv(encoder_layers=conv_encoder_layers,
@@ -644,6 +646,7 @@ def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim,
                                 n_cond = init_lable.size(1)).to(device)
 
     modelConv_name = str(modelConv_f.__class__)[21:-2]
+    print(modelConv_name)
 
 
 
@@ -915,7 +918,7 @@ def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim,
             # free, total = torch.cuda.mem_get_info(torch.device('cuda:0'))
             # mem_used_mb = (total - free) / 1024 ** 2
             # print(f"After loading model / before sampling: {mem_used_mb}")
-
+            print(device)
             sample = sample_data(dls, data, netsEnergy, netsConv, de, d,
                                     num_steps_voxel, num_steps_energy,
                                     gammas_voxel, gammas_energy, device,
@@ -945,7 +948,7 @@ def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim,
             data_trafo[data_trafo<0] = 0.0
 
             emds = {}
-            err = {}
+            errs = {}
 
 
             ## Calculate metrics and generate plots
@@ -958,230 +961,249 @@ def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim,
             }
 
             ### ESum 1D ###
-            k = "Esum1D"
-            feed_dict = {
-                'Geant4': np.sum(data_full[:,:100],(1)),
-                'GFlash': np.sum(data_orig,(1,2,3)),
-                full_modelEnergy_name: energy_gflash_trafo[:,1],
-            }
-
-            if generate_plots:
-                fig,ax0 = histogram(feed_dict, line_style, colors,
-                                    weights = weight_dict,
-                                    label_loc= 'best',
-                                    xlabel='Total Energy Sum [GeV]', ylabel= 'Normalized entries',
-                                    binning = binning_l['esum'],triangle=triangle,
-                                    logy=False, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['esum'],
-                                    title='10-100 GeV', y_range= y_range_l['esum'])
-                fig.savefig(plots_dir_path + 'esum_1D_iter'+ str(i) + '.svg')
-            if record_metrics:
-                for _,plot in enumerate(feed_dict.keys()):
-                    emds[f"{k}_{plot}"],err[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
-
-            ### ESumFrac 1D ###
-            k = "EsumFrac1D"
-            feed_dict = {
-                'Geant4': np.sum(data_full[:,:100],(1))/(data_full[:,200]/1000.0),
-                'GFlash': np.sum(data_orig,(1,2,3))/energy_particle[:,0],
-                full_modelEnergy_name: energy_gflash_trafo[:,1]/energy_particle[:,0],
-            }
-            if generate_plots:
-                fig,ax0 = histogram(feed_dict, line_style, colors,
-                                    weights = weight_dict,
-                                    label_loc= 'best',
-                                    xlabel='$E_{shower}/E_{particle}$', ylabel= 'Normalized entries',
-                                    binning = binning_l['esumfrac'],triangle=triangle,
-                                    logy=False, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['esumfrac'],
-                                    title='10-100 GeV', y_range= y_range_l['esumfrac'])
-                fig.savefig(plots_dir_path + 'esumfrac_1D_iter'+ str(i) + '.svg')
-            if record_metrics:
-                for _,plot in enumerate(feed_dict.keys()):
-                    emds[f"{k}_{plot}"],err[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
-
-            if full_model_metrics:
-                ### ESum ###
-                k = "ESum"
+            if esum1d:
+                k = "Esum1D"
                 feed_dict = {
                     'Geant4': np.sum(data_full[:,:100],(1)),
                     'GFlash': np.sum(data_orig,(1,2,3)),
-                    full_modelConv_name: np.sum(data_trafo,(1,2,3)),
+                    full_modelEnergy_name: energy_gflash_trafo[:,1],
                 }
+
                 if generate_plots:
-                    fig,ax0 = histogram(feed_dict, line_style, colors,
+                    fig,ax0,emds,errs = histogram(feed_dict, emds, errs, line_style, colors,
                                         weights = weight_dict,
                                         label_loc= 'best',
                                         xlabel='Total Energy Sum [GeV]', ylabel= 'Normalized entries',
                                         binning = binning_l['esum'],triangle=triangle,
                                         logy=False, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['esum'],
                                         title='10-100 GeV', y_range= y_range_l['esum'])
-                    #ax0.set_xscale("log")
-                    fig.savefig(plots_dir_path + 'esum_iter'+ str(i) + '.svg')
-                if record_metrics:
+                    fig.savefig(plots_dir_path + f"{full_modelEnergy_name}_{full_modelConv_name}_" + 'esum_1D_iter'+ str(i) + '.svg')
+                    plt.close()
+                if record_metrics and not(generate_plots):
                     for _,plot in enumerate(feed_dict.keys()):
-                        emds[f"{k}_{plot}"],err[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
+                        emds[f"{k}_{plot}"],errs[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
+
+            ### ESumFrac 1D ###
+            if esumfrac1d:
+                k = "EsumFrac1D"
+                feed_dict = {
+                    'Geant4': np.sum(data_full[:,:100],(1))/(data_full[:,200]/1000.0),
+                    'GFlash': np.sum(data_orig,(1,2,3))/energy_particle[:,0],
+                    full_modelEnergy_name: energy_gflash_trafo[:,1]/energy_particle[:,0],
+                }
+                if generate_plots:
+                    fig,ax0,emds,errs = histogram(feed_dict, emds, errs, line_style, colors,
+                                        weights = weight_dict,
+                                        label_loc= 'best',
+                                        xlabel='$E_{shower}/E_{particle}$', ylabel= 'Normalized entries',
+                                        binning = binning_l['esumfrac'],triangle=triangle,
+                                        logy=False, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['esumfrac'],
+                                        title='10-100 GeV', y_range= y_range_l['esumfrac'])
+                    fig.savefig(plots_dir_path + f"{full_modelEnergy_name}_{full_modelConv_name}_" + 'esumfrac_1D_iter'+ str(i) + '.svg')
+                    plt.close()
+                if record_metrics and not(generate_plots):
+                    for _,plot in enumerate(feed_dict.keys()):
+                        emds[f"{k}_{plot}"],errs[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
+
+            if full_model_metrics:
+                ### ESum ###
+                if esum:
+                    k = "ESum"
+                    feed_dict = {
+                        'Geant4': np.sum(data_full[:,:100],(1)),
+                        'GFlash': np.sum(data_orig,(1,2,3)),
+                        full_modelConv_name: np.sum(data_trafo,(1,2,3)),
+                    }
+                    if generate_plots:
+                        fig,ax0,emds,errs = histogram(feed_dict, emds, errs, line_style, colors,
+                                            weights = weight_dict,
+                                            label_loc= 'best',
+                                            xlabel='Total Energy Sum [GeV]', ylabel= 'Normalized entries',
+                                            binning = binning_l['esum'],triangle=triangle,
+                                            logy=False, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['esum'],
+                                            title='10-100 GeV', y_range= y_range_l['esum'])
+                        #ax0.set_xscale("log")
+                        fig.savefig(plots_dir_path + f"{full_modelEnergy_name}_{full_modelConv_name}_" + 'esum_iter'+ str(i) + '.svg')
+                        plt.close()
+                    if record_metrics and not(generate_plots):
+                        for _,plot in enumerate(feed_dict.keys()):
+                            emds[f"{k}_{plot}"],errs[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
 
 
 
                 ### EMax ###
-                k = "EMax"
-                feed_dict = {
-                    'Geant4': np.max(data_full[:,:100],(1)),
-                    'GFlash': np.max(data_orig,(1,2,3)),
-                    full_modelConv_name: np.max(data_trafo,(1,2,3)),
-                }
-                if generate_plots:
-                    fig,ax0 = histogram(feed_dict, line_style, colors,
-                                        weights = weight_dict,
-                                        label_loc= 'best',
-                                        xlabel='Brightest Cell Energy [GeV]', ylabel= 'Normalized entries',
-                                        binning = binning_l['emax'],triangle=triangle,
-                                        logy=False, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['emax'],
-                                        title='10-100 GeV', y_range= y_range_l['emax'])
-                    #ax0.set_xscale("log")
-                    fig.savefig(plots_dir_path + 'emax_iter'+ str(i) + '.svg')
-                if record_metrics:
-                    for _,plot in enumerate(feed_dict.keys()):
-                        emds[f"{k}_{plot}"],err[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
+                if emax:
+                    k = "EMax"
+                    feed_dict = {
+                        'Geant4': np.max(data_full[:,:100],(1)),
+                        'GFlash': np.max(data_orig,(1,2,3)),
+                        full_modelConv_name: np.max(data_trafo,(1,2,3)),
+                    }
+                    if generate_plots:
+                        fig,ax0,emds,errs = histogram(feed_dict, emds, errs, line_style, colors,
+                                            weights = weight_dict,
+                                            label_loc= 'best',
+                                            xlabel='Brightest Cell Energy [GeV]', ylabel= 'Normalized entries',
+                                            binning = binning_l['emax'],triangle=triangle,
+                                            logy=False, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['emax'],
+                                            title='10-100 GeV', y_range= y_range_l['emax'])
+                        #ax0.set_xscale("log")
+                        fig.savefig(plots_dir_path + f"{full_modelEnergy_name}_{full_modelConv_name}_" + 'emax_iter'+ str(i) + '.svg')
+                        plt.close()
+                    if record_metrics and not(generate_plots):
+                        for _,plot in enumerate(feed_dict.keys()):
+                            emds[f"{k}_{plot}"],errs[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
 
 
 
                 ### NHit ###
-                k = "NHit"
-                feed_dict = {
-                    'Geant4': np.sum(get_nhit(data_full[:,:100]),(1)),
-                    'GFlash': np.sum(get_nhit(data_orig),(1,2,3)),
-                    full_modelConv_name: np.sum(get_nhit(data_trafo),(1,2,3)),
-                }
-                if generate_plots:
-                    fig,ax0 = histogram(feed_dict, line_style, colors,
-                                        weights = weight_dict,
-                                        label_loc= 'best',
-                                        xlabel='# of hits above 1MeV', ylabel= 'Normalized entries',
-                                        binning = binning_l['nhit'],triangle=triangle,
-                                        logy=False, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['nhit'],
-                                        title='10-100 GeV', y_range= y_range_l['nhit'])
-                    #ax0.set_xscale("log")
-                    fig.savefig(plots_dir_path + 'nhit_iter'+ str(i) + '.svg')
-                if record_metrics:
-                    for _,plot in enumerate(feed_dict.keys()):
-                        emds[f"{k}_{plot}"],err[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
+                if nhit:
+                    k = "NHit"
+                    feed_dict = {
+                        'Geant4': np.sum(get_nhit(data_full[:,:100]),(1)),
+                        'GFlash': np.sum(get_nhit(data_orig),(1,2,3)),
+                        full_modelConv_name: np.sum(get_nhit(data_trafo),(1,2,3)),
+                    }
+                    if generate_plots:
+                        fig,ax0,emds,errs = histogram(feed_dict, emds, errs, line_style, colors,
+                                            weights = weight_dict,
+                                            label_loc= 'best',
+                                            xlabel='# of hits above 1MeV', ylabel= 'Normalized entries',
+                                            binning = binning_l['nhit'],triangle=triangle,
+                                            logy=False, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['nhit'],
+                                            title='10-100 GeV', y_range= y_range_l['nhit'])
+                        #ax0.set_xscale("log")
+                        fig.savefig(plots_dir_path + f"{full_modelEnergy_name}_{full_modelConv_name}_" + 'nhit_iter'+ str(i) + '.svg')
+                        plt.close()
+                    if record_metrics and not(generate_plots):
+                        for _,plot in enumerate(feed_dict.keys()):
+                            emds[f"{k}_{plot}"],errs[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
 
 
                 ### Espec ###
-                k = 'ESpec'
-                feed_dict = {
-                    'Geant4': np.reshape(data_full[:,:100], -1),
-                    'GFlash': np.reshape(data_orig, -1),
-                    full_modelConv_name: np.reshape(data_trafo, -1),
-                }
+                if espec:
+                    k = 'ESpec'
+                    feed_dict = {
+                        'Geant4': np.reshape(data_full[:,:100], -1),
+                        'GFlash': np.reshape(data_orig, -1),
+                        full_modelConv_name: np.reshape(data_trafo, -1),
+                    }
 
-                weight_dict = {
-                    'Geant4': np.ones(np.reshape(data_full[:,:100], -1).shape[0]),
-                    'GFlash': np.ones(np.reshape(data_full[:,:100], -1).shape[0]),
-                    full_modelConv_name: np.ones(np.reshape(data_full[:,:100], -1).shape[0]),
-                }
-                if generate_plots:
-                    fig,ax0 = histogram(feed_dict, line_style, colors,
-                                        weights = weight_dict,
-                                        label_loc= 'best',
-                                        xlabel='Cell Energies [GeV]', ylabel= 'Normalized entries',
-                                        binning = binning_l['espec'],
-                                        logy=True, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['espec'],
-                                        title='10-100 GeV', triangle=triangle, y_range= y_range_l['espec'])
-                    ax0.set_xscale("log")
-                    fig.savefig(plots_dir_path + 'espec_iter'+ str(i) + '.svg')
-                if record_metrics:
-                    for _,plot in enumerate(feed_dict.keys()):
-                        emds[f"{k}_{plot}"],err[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
+                    weight_dict = {
+                        'Geant4': np.ones(np.reshape(data_full[:,:100], -1).shape[0]),
+                        'GFlash': np.ones(np.reshape(data_full[:,:100], -1).shape[0]),
+                        full_modelConv_name: np.ones(np.reshape(data_full[:,:100], -1).shape[0]),
+                    }
+                    if generate_plots:
+                        fig,ax0,emds,errs = histogram(feed_dict, emds, errs, line_style, colors,
+                                            weights = weight_dict,
+                                            label_loc= 'best',
+                                            xlabel='Cell Energies [GeV]', ylabel= 'Normalized entries',
+                                            binning = binning_l['espec'],
+                                            logy=True, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['espec'],
+                                            title='10-100 GeV', triangle=triangle, y_range= y_range_l['espec'])
+                        ax0.set_xscale("log")
+                        fig.savefig(plots_dir_path + f"{full_modelEnergy_name}_{full_modelConv_name}_" + 'espec_iter'+ str(i) + '.svg')
+                        plt.close()
+                    if record_metrics and not(generate_plots):
+                        for _,plot in enumerate(feed_dict.keys()):
+                            emds[f"{k}_{plot}"],errs[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
 
                 ### EspecNorm ###
-                k = 'ESpecNorm'
-                feed_dict = {
-                    'Geant4': np.reshape(data_full[:,:100], -1),
-                    'GFlash': np.reshape(data_orig, -1),
-                    full_modelConv_name: np.reshape(data_trafo, -1),
-                }
+                if especnorm:
+                    k = 'ESpecNorm'
+                    feed_dict = {
+                        'Geant4': np.reshape(data_full[:,:100], -1),
+                        'GFlash': np.reshape(data_orig, -1),
+                        full_modelConv_name: np.reshape(data_trafo, -1),
+                    }
 
-                weight_dict = {
-                    'Geant4': np.ones(np.reshape(data_full[:,:100], -1).shape[0])/np.reshape(data_full[:,:100], -1).shape[0],
-                    'GFlash': np.ones(np.reshape(data_full[:,:100], -1).shape[0])/np.reshape(data_full[:,:100], -1).shape[0],
-                    full_modelConv_name: np.ones(np.reshape(data_full[:,:100], -1).shape[0])/np.reshape(data_full[:,:100], -1).shape[0],
-                }
-                if generate_plots:
-                    fig,ax0 = histogram(feed_dict, line_style, colors,
-                                        weights = weight_dict,
-                                        label_loc= 'best', density=False,
-                                        xlabel='Cell Energies', ylabel= 'Normalized entries',
-                                        binning = binning_l['espec'],
-                                        logy=True, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['espec'],
-                                        title='10-100 GeV', triangle=triangle, y_range= y_range_l['espec'])
-                    ax0.set_xscale("log")
-                    fig.savefig(plots_dir_path + 'espec_norm_iter'+ str(i) + '.svg')
-                if record_metrics:
-                    for _,plot in enumerate(feed_dict.keys()):
-                        emds[f"{k}_{plot}"],err[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
+                    weight_dict = {
+                        'Geant4': np.ones(np.reshape(data_full[:,:100], -1).shape[0])/np.reshape(data_full[:,:100], -1).shape[0],
+                        'GFlash': np.ones(np.reshape(data_full[:,:100], -1).shape[0])/np.reshape(data_full[:,:100], -1).shape[0],
+                        full_modelConv_name: np.ones(np.reshape(data_full[:,:100], -1).shape[0])/np.reshape(data_full[:,:100], -1).shape[0],
+                    }
+                    if generate_plots:
+                        fig,ax0,emds,errs = histogram(feed_dict, emds, errs, line_style, colors,
+                                            weights = weight_dict,
+                                            label_loc= 'best', density=False,
+                                            xlabel='Cell Energies', ylabel= 'Normalized entries',
+                                            binning = binning_l['espec'],
+                                            logy=True, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['espec'],
+                                            title='10-100 GeV', triangle=triangle, y_range= y_range_l['espec'])
+                        ax0.set_xscale("log")
+                        fig.savefig(plots_dir_path + f"{full_modelEnergy_name}_{full_modelConv_name}_" + 'espec_norm_iter'+ str(i) + '.svg')
+                        plt.close()
+                    if record_metrics and not(generate_plots):
+                        for _,plot in enumerate(feed_dict.keys()):
+                            emds[f"{k}_{plot}"],errs[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
 
 
                 ### Ex ###
-                k = 'Ex'
-                weight_dict = {
-                    'Geant4': np.reshape(np.sum(np.reshape(data_full[:,:100], (-1, 10, 10)), 2), -1)/data_full.shape[0],
-                    'GFlash': np.reshape(np.sum(np.reshape(data_orig, (-1, 10, 10)), 2), -1)/data_full.shape[0],
-                    full_modelConv_name: np.reshape(np.sum(np.reshape(data_trafo, (-1, 10, 10)), 2), -1)/data_full.shape[0],
-                }
+                if ex:
+                    k = 'Ex'
+                    weight_dict = {
+                        'Geant4': np.reshape(np.sum(np.reshape(data_full[:,:100], (-1, 10, 10)), 2), -1)/data_full.shape[0],
+                        'GFlash': np.reshape(np.sum(np.reshape(data_orig, (-1, 10, 10)), 2), -1)/data_full.shape[0],
+                        full_modelConv_name: np.reshape(np.sum(np.reshape(data_trafo, (-1, 10, 10)), 2), -1)/data_full.shape[0],
+                    }
 
-                feed_dict = {
-                    'Geant4': np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
-                    'GFlash': np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
-                    full_modelConv_name: np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
-                }
-                if generate_plots:
-                    fig,ax0 = histogram(feed_dict, line_style, colors,
-                                        weights = weight_dict,
-                                        label_loc= 'best', density=False,
-                                        xlabel='x Profile', ylabel= 'Mean Energy [GeV]',
-                                        binning = binning_l['ex'],triangle=triangle,
-                                        logy=True, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['ex'],
-                                        title='10-100 GeV', y_range= y_range_l['ex'])
-                    #ax0.set_xscale("log")
-                    fig.savefig(plots_dir_path + 'ex_iter'+ str(i) + '.svg')
-                if record_metrics:
-                    for _,plot in enumerate(feed_dict.keys()):
-                        emds[f"{k}_{plot}"],err[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
+                    feed_dict = {
+                        'Geant4': np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
+                        'GFlash': np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
+                        full_modelConv_name: np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
+                    }
+                    if generate_plots:
+                        fig,ax0,emds,errs = histogram(feed_dict, emds, errs, line_style, colors,
+                                            weights = weight_dict,
+                                            label_loc= 'best', density=False,
+                                            xlabel='x Profile', ylabel= 'Mean Energy [GeV]',
+                                            binning = binning_l['ex'],triangle=triangle,
+                                            logy=True, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['ex'],
+                                            title='10-100 GeV', y_range= y_range_l['ex'])
+                        #ax0.set_xscale("log")
+                        fig.savefig(plots_dir_path + f"{full_modelEnergy_name}_{full_modelConv_name}_" + 'ex_iter'+ str(i) + '.svg')
+                        plt.close()
+                    if record_metrics and not(generate_plots):
+                        for _,plot in enumerate(feed_dict.keys()):
+                            emds[f"{k}_{plot}"],errs[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
 
                 ### Ey ###
-                k = 'Ey'
-                weight_dict = {
-                    'Geant4': np.reshape(np.sum(np.reshape(data_full[:,:100], (-1, 10, 10)), 1), -1)/data_full.shape[0],
-                    'GFlash': np.reshape(np.sum(np.reshape(data_orig, (-1, 10, 10)), 1), -1)/data_full.shape[0],
-                    full_modelConv_name: np.reshape(np.sum(np.reshape(data_trafo, (-1, 10, 10)), 1), -1)/data_full.shape[0],
-                }
+                if ey:
+                    k = 'Ey'
+                    weight_dict = {
+                        'Geant4': np.reshape(np.sum(np.reshape(data_full[:,:100], (-1, 10, 10)), 1), -1)/data_full.shape[0],
+                        'GFlash': np.reshape(np.sum(np.reshape(data_orig, (-1, 10, 10)), 1), -1)/data_full.shape[0],
+                        full_modelConv_name: np.reshape(np.sum(np.reshape(data_trafo, (-1, 10, 10)), 1), -1)/data_full.shape[0],
+                    }
 
-                feed_dict = {
-                    'Geant4': np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
-                    'GFlash': np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
-                    full_modelConv_name: np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
-                }
-                if generate_plots:
-                    fig,ax0 = histogram(feed_dict, line_style, colors,
-                                        weights = weight_dict,
-                                        label_loc= 'best', density=False,
-                                        xlabel='y Profile', ylabel= 'Mean Energy [GeV]',
-                                        binning = binning_l['ex'],triangle=triangle,
-                                        logy=True, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['ex'],
-                                        title='10-100 GeV', y_range= y_range_l['ex'])
-                    #ax0.set_xscale("log")
-                    fig.savefig(plots_dir_path + 'ey_iter'+ str(i) + '.svg')
-                if record_metrics:
-                    for _,plot in enumerate(feed_dict.keys()):
-                        emds[f"{k}_{plot}"],err[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
+                    feed_dict = {
+                        'Geant4': np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
+                        'GFlash': np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
+                        full_modelConv_name: np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
+                    }
+                    if generate_plots:
+                        fig,ax0,emds,errs = histogram(feed_dict, emds, errs, line_style, colors,
+                                            weights = weight_dict,
+                                            label_loc= 'best', density=False,
+                                            xlabel='y Profile', ylabel= 'Mean Energy [GeV]',
+                                            binning = binning_l['ex'],triangle=triangle,
+                                            logy=True, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['ex'],
+                                            title='10-100 GeV', y_range= y_range_l['ex'])
+                        #ax0.set_xscale("log")
+                        fig.savefig(plots_dir_path + f"{full_modelEnergy_name}_{full_modelConv_name}_" + 'ey_iter'+ str(i) + '.svg')
+                        plt.close()
+                    if record_metrics and not(generate_plots):
+                        for _,plot in enumerate(feed_dict.keys()):
+                            emds[f"{k}_{plot}"],errs[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
 
-                if generate_plots:
-                    fig,ax0 = scatter(xdata=energy_gflash_trafo[:10000,0], ydata=energy_gflash_trafo[:10000,1],
-                                        data_label = full_modelEnergy_name,
-                                        xlabel='$e_{GF}$',ylabel='$e_{refined}$',
-                                        label_loc='best', title='10-100 GeV')
-                    fig.savefig(plots_dir_path + 'scatter_iter'+ str(i) + '.svg')
+                # if generate_plots:
+                #     fig,ax0 = scatter(xdata=energy_gflash_trafo[:10000,0], ydata=energy_gflash_trafo[:10000,1],
+                #                         data_label = full_modelEnergy_name,
+                #                         xlabel='$e_{GF}$',ylabel='$e_{refined}$',
+                #                         label_loc='best', title='10-100 GeV')
+                #     fig.savefig(plots_dir_path + f"{full_modelEnergy_name}_{full_modelConv_name}_" + 'scatter_iter'+ str(i) + '.svg')
+                    plt.close()
             
             print(" - Done 0-100 GeV")
 
@@ -1266,8 +1288,10 @@ def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim,
         
 
                     ## -------- Load Data --------- ##
-
-                    batch_size = 25000#10000#
+                    if modelConv_type in ["Bernstein", "Gram", "Jacobi"]:
+                        batch_size = 5000
+                    else:
+                        batch_size = 25000
 
                     npar = int(energy_voxel_g4.shape[0])
 
@@ -1296,6 +1320,7 @@ def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim,
 
                     #energy_voxel_gflash_orig, energy_voxel_gflash_trafo, energy_gflash_trafo, _ = sample(forward_or_backward = 'f', forward_or_backward_rev = 'b')
                     # energy_voxel_gflash_orig, energy_voxel_gflash_trafo, energy_gflash_trafo, energy_particle = sample(forward_or_backward = 'f', forward_or_backward_rev = 'b')
+                    print(device)
                     sample = sample_data(dls, data, netsEnergy, netsConv, de, d,
                                     num_steps_voxel, num_steps_energy,
                                     gammas_voxel, gammas_energy, device,
@@ -1371,37 +1396,15 @@ def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim,
                     # print(data_full.shape)
 
                     ### Esum 1D ###
-                    k = f"Esum1D_{energy}GeV"
-                    feed_dict = {
-                        'Geant4': np.sum(data_full[:,:100],(1)),
-                        'GFlash': np.sum(data_orig,(1,2,3)),
-                        full_modelEnergy_name: energy_gflash_trafo[:,1],
-                    }
-                    if generate_plots:
-                        fig,ax0 = histogram(feed_dict, line_style, colors,
-                                            weights = weight_dict,
-                                            label_loc= 'best',
-                                            xlabel='Total Energy Sum [GeV]', ylabel= 'Normalized entries',
-                                            binning = binning_l['esum_{:d}'.format(energy)] ,triangle=triangle,
-                                            logy=False, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['esum'],
-                                            title='{:d} GeV'.format(energy), y_range= y_range_l['esum_{:d}'.format(energy)])
-                        #ax0.set_xscale("log")
-                        fig.savefig(plots_dir_path + 'esum_1D_{:d}GeV_iter'.format(energy) + str(i) + '.svg')
-                    if record_metrics:
-                        for _,plot in enumerate(feed_dict.keys()):
-                            emds[f"{k}_{plot}"],err[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
-
-                    #break
-                    if full_model_metrics:
-                        ### Esum ###
-                        k = f"ESum_{energy}GeV"
+                    if esum1d:
+                        k = f"Esum1D_{energy}GeV"
                         feed_dict = {
                             'Geant4': np.sum(data_full[:,:100],(1)),
                             'GFlash': np.sum(data_orig,(1,2,3)),
-                            full_modelConv_name: np.sum(data_trafo,(1,2,3)),
+                            full_modelEnergy_name: energy_gflash_trafo[:,1],
                         }
                         if generate_plots:
-                            fig,ax0 = histogram(feed_dict, line_style, colors,
+                            fig,ax0,emds,errs = histogram(feed_dict, emds, errs, line_style, colors,
                                                 weights = weight_dict,
                                                 label_loc= 'best',
                                                 xlabel='Total Energy Sum [GeV]', ylabel= 'Normalized entries',
@@ -1409,151 +1412,188 @@ def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim,
                                                 logy=False, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['esum'],
                                                 title='{:d} GeV'.format(energy), y_range= y_range_l['esum_{:d}'.format(energy)])
                             #ax0.set_xscale("log")
-                            fig.savefig(plots_dir_path + 'esum_{:d}GeV_iter'.format(energy) + str(i) + '.svg')
-                        if record_metrics:
+                            fig.savefig(plots_dir_path + f"{full_modelEnergy_name}_{full_modelConv_name}_" + 'esum_1D_{:d}GeV_iter'.format(energy) + str(i) + '.svg')
+                            plt.close()
+                        if record_metrics and not(generate_plots):
                             for _,plot in enumerate(feed_dict.keys()):
-                                emds[f"{k}_{plot}"],err[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
+                                emds[f"{k}_{plot}"],errs[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
+
+                    #break
+                    if full_model_metrics:
+                        ### Esum ###
+                        if esum:
+                            k = f"ESum_{energy}GeV"
+                            feed_dict = {
+                                'Geant4': np.sum(data_full[:,:100],(1)),
+                                'GFlash': np.sum(data_orig,(1,2,3)),
+                                full_modelConv_name: np.sum(data_trafo,(1,2,3)),
+                            }
+                            if generate_plots:
+                                fig,ax0,emds,errs = histogram(feed_dict, emds, errs, line_style, colors,
+                                                    weights = weight_dict,
+                                                    label_loc= 'best',
+                                                    xlabel='Total Energy Sum [GeV]', ylabel= 'Normalized entries',
+                                                    binning = binning_l['esum_{:d}'.format(energy)] ,triangle=triangle,
+                                                    logy=False, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['esum'],
+                                                    title='{:d} GeV'.format(energy), y_range= y_range_l['esum_{:d}'.format(energy)])
+                                #ax0.set_xscale("log")
+                                fig.savefig(plots_dir_path + f"{full_modelEnergy_name}_{full_modelConv_name}_" + 'esum_{:d}GeV_iter'.format(energy) + str(i) + '.svg')
+                                plt.close()
+                            if record_metrics and not(generate_plots):
+                                for _,plot in enumerate(feed_dict.keys()):
+                                    emds[f"{k}_{plot}"],errs[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
 
                         ### EMax ###
-                        k = f"EMax_{energy}GeV"
-                        feed_dict = {
-                            'Geant4': np.max(data_full[:,:100],(1)),
-                            'GFlash': np.max(data_orig,(1,2,3)),
-                            full_modelConv_name: np.max(data_trafo,(1,2,3)),
-                        }
-                        if generate_plots:
-                            fig,ax0 = histogram(feed_dict, line_style, colors,
-                                                weights = weight_dict,
-                                                label_loc= 'best',
-                                                xlabel='Brightest Cell Energy [GeV]', ylabel= 'Normalized entries',
-                                                binning = binning_l['emax_{:d}'.format(energy)],triangle=triangle,
-                                                logy=False, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['emax'],
-                                                title='{:d} GeV'.format(energy), y_range= y_range_l['emax_{:d}'.format(energy)])
-                            #ax0.set_xscale("log")
-                            fig.savefig(plots_dir_path + 'emax_{:d}GeV_iter'.format(energy) + str(i) + '.svg')
-                        if record_metrics:
-                            for _,plot in enumerate(feed_dict.keys()):
-                                emds[f"{k}_{plot}"],err[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
+                        if emax:
+                            k = f"EMax_{energy}GeV"
+                            feed_dict = {
+                                'Geant4': np.max(data_full[:,:100],(1)),
+                                'GFlash': np.max(data_orig,(1,2,3)),
+                                full_modelConv_name: np.max(data_trafo,(1,2,3)),
+                            }
+                            if generate_plots:
+                                fig,ax0,emds,errs = histogram(feed_dict, emds, errs, line_style, colors,
+                                                    weights = weight_dict,
+                                                    label_loc= 'best',
+                                                    xlabel='Brightest Cell Energy [GeV]', ylabel= 'Normalized entries',
+                                                    binning = binning_l['emax_{:d}'.format(energy)],triangle=triangle,
+                                                    logy=False, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['emax'],
+                                                    title='{:d} GeV'.format(energy), y_range= y_range_l['emax_{:d}'.format(energy)])
+                                #ax0.set_xscale("log")
+                                fig.savefig(plots_dir_path + f"{full_modelEnergy_name}_{full_modelConv_name}_" + 'emax_{:d}GeV_iter'.format(energy) + str(i) + '.svg')
+                                plt.close()
+                            if record_metrics and not(generate_plots):
+                                for _,plot in enumerate(feed_dict.keys()):
+                                    emds[f"{k}_{plot}"],errs[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
 
 
                         ### NHit ###
-                        k = f"NHit_{energy}GeV"
-                        feed_dict = {
-                            'Geant4': np.sum(get_nhit(data_full[:,:100]),(1)),
-                            'GFlash': np.sum(get_nhit(data_orig),(1,2,3)),
-                            full_modelConv_name: np.sum(get_nhit(data_trafo),(1,2,3)),
-                        }
-                        if generate_plots:
-                            fig,ax0 = histogram(feed_dict, line_style, colors,
-                                                weights = weight_dict,
-                                                label_loc= 'best',
-                                                xlabel='# of hits above 1MeV', ylabel= 'Normalized entries',
-                                                binning = binning_l['nhit_{:d}'.format(energy)],triangle=triangle,
-                                                logy=False, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['nhit'],
-                                                title='{:d} GeV'.format(energy), y_range= y_range_l['nhit_{:d}'.format(energy)])
-                            #ax0.set_xscale("log")
-                            fig.savefig(plots_dir_path + 'nhit_{:d}GeV_iter'.format(energy) + str(i) + '.svg')
-                        if record_metrics:
-                            for _,plot in enumerate(feed_dict.keys()):
-                                emds[f"{k}_{plot}"],err[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
+                        if nhit:
+                            k = f"NHit_{energy}GeV"
+                            feed_dict = {
+                                'Geant4': np.sum(get_nhit(data_full[:,:100]),(1)),
+                                'GFlash': np.sum(get_nhit(data_orig),(1,2,3)),
+                                full_modelConv_name: np.sum(get_nhit(data_trafo),(1,2,3)),
+                            }
+                            if generate_plots:
+                                fig,ax0,emds,errs = histogram(feed_dict, emds, errs, line_style, colors,
+                                                    weights = weight_dict,
+                                                    label_loc= 'best',
+                                                    xlabel='# of hits above 1MeV', ylabel= 'Normalized entries',
+                                                    binning = binning_l['nhit_{:d}'.format(energy)],triangle=triangle,
+                                                    logy=False, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['nhit'],
+                                                    title='{:d} GeV'.format(energy), y_range= y_range_l['nhit_{:d}'.format(energy)])
+                                #ax0.set_xscale("log")
+                                fig.savefig(plots_dir_path + f"{full_modelEnergy_name}_{full_modelConv_name}_" + 'nhit_{:d}GeV_iter'.format(energy) + str(i) + '.svg')
+                                plt.close()
+                            if record_metrics and not(generate_plots):
+                                for _,plot in enumerate(feed_dict.keys()):
+                                    emds[f"{k}_{plot}"],errs[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
 
 
                         ### ESpec ###
-                        k = f"ESpec_{energy}GeV"
-                        feed_dict = {
-                            'Geant4': get_espec(np.reshape(data_full[:,:100], -1)),
-                            'GFlash': get_espec(np.reshape(data_orig, -1)),
-                            full_modelConv_name: get_espec(np.reshape(data_trafo, -1)),
-                        }
+                        if espec:
+                            k = f"ESpec_{energy}GeV"
+                            feed_dict = {
+                                'Geant4': get_espec(np.reshape(data_full[:,:100], -1)),
+                                'GFlash': get_espec(np.reshape(data_orig, -1)),
+                                full_modelConv_name: get_espec(np.reshape(data_trafo, -1)),
+                            }
 
-                        weight_dict = {
-                            'Geant4': np.ones(np.reshape(data_full[:,:100], -1).shape[0]),
-                            'GFlash': np.ones(np.reshape(data_full[:,:100], -1).shape[0]),
-                            full_modelConv_name: np.ones(np.reshape(data_full[:,:100], -1).shape[0]),
-                        }
-                        if generate_plots:
-                            fig,ax0 = histogram(feed_dict, line_style, colors,
-                                                weights = weight_dict,
-                                                label_loc= 'best',
-                                                xlabel='Cell Energies [GeV]', ylabel= 'Normalized entries',
-                                                binning = binning_l['espec'],
-                                                logy=True, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['espec'],
-                                                title='{:d} GeV'.format(energy), triangle=triangle, y_range= y_range_l['espec'])
-                            ax0.set_xscale("log")
-                            fig.savefig(plots_dir_path + 'espec_{:d}GeV_iter'.format(energy) + str(i) + '.svg')
-                        if record_metrics:
-                            for _,plot in enumerate(feed_dict.keys()):
-                                emds[f"{k}_{plot}"],err[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
+                            weight_dict = {
+                                'Geant4': np.ones(np.reshape(data_full[:,:100], -1).shape[0]),
+                                'GFlash': np.ones(np.reshape(data_full[:,:100], -1).shape[0]),
+                                full_modelConv_name: np.ones(np.reshape(data_full[:,:100], -1).shape[0]),
+                            }
+                            if generate_plots:
+                                fig,ax0,emds,errs = histogram(feed_dict, emds, errs, line_style, colors,
+                                                    weights = weight_dict,
+                                                    label_loc= 'best',
+                                                    xlabel='Cell Energies [GeV]', ylabel= 'Normalized entries',
+                                                    binning = binning_l['espec'],
+                                                    logy=True, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['espec'],
+                                                    title='{:d} GeV'.format(energy), triangle=triangle, y_range= y_range_l['espec'])
+                                ax0.set_xscale("log")
+                                fig.savefig(plots_dir_path + f"{full_modelEnergy_name}_{full_modelConv_name}_" + 'espec_{:d}GeV_iter'.format(energy) + str(i) + '.svg')
+                                plt.close()
+                            if record_metrics and not(generate_plots):
+                                for _,plot in enumerate(feed_dict.keys()):
+                                    emds[f"{k}_{plot}"],errs[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
 
 
                         ### ex ###
-                        k = f"Ex_{energy}GeV"
-                        weight_dict = {
-                            'Geant4': np.reshape(np.sum(np.reshape(data_full[:,:100], (-1, 10, 10)), 2), -1)/data_full.shape[0],
-                            'GFlash': np.reshape(np.sum(np.reshape(data_orig, (-1, 10, 10)), 2), -1)/data_full.shape[0],
-                            full_modelConv_name: np.reshape(np.sum(np.reshape(data_trafo, (-1, 10, 10)), 2), -1)/data_full.shape[0],
-                        }
+                        if ex:
+                            k = f"Ex_{energy}GeV"
+                            weight_dict = {
+                                'Geant4': np.reshape(np.sum(np.reshape(data_full[:,:100], (-1, 10, 10)), 2), -1)/data_full.shape[0],
+                                'GFlash': np.reshape(np.sum(np.reshape(data_orig, (-1, 10, 10)), 2), -1)/data_full.shape[0],
+                                full_modelConv_name: np.reshape(np.sum(np.reshape(data_trafo, (-1, 10, 10)), 2), -1)/data_full.shape[0],
+                            }
 
-                        feed_dict = {
-                            'Geant4': np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
-                            'GFlash': np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
-                            full_modelConv_name: np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
-                        }
-                        if generate_plots:
-                            fig,ax0 = histogram(feed_dict, line_style, colors,
-                                                weights = weight_dict,
-                                                label_loc= 'best', density=False,
-                                                xlabel='x Profile', ylabel= 'Mean Energy [GeV]',
-                                                binning = binning_l['ex'],triangle=triangle,
-                                                logy=True, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['ex'],
-                                                title='{:d} GeV'.format(energy), y_range= y_range_l['ex'])
-                            #ax0.set_xscale("log")
-                            fig.savefig(plots_dir_path + 'ex_{:d}GeV_iter'.format(energy) + str(i) + '.svg')
-                        if record_metrics:
-                            for _,plot in enumerate(feed_dict.keys()):
-                                emds[f"{k}_{plot}"],err[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
+                            feed_dict = {
+                                'Geant4': np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
+                                'GFlash': np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
+                                full_modelConv_name: np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
+                            }
+                            if generate_plots:
+                                fig,ax0,emds,errs = histogram(feed_dict, emds, errs, line_style, colors,
+                                                    weights = weight_dict,
+                                                    label_loc= 'best', density=False,
+                                                    xlabel='x Profile', ylabel= 'Mean Energy [GeV]',
+                                                    binning = binning_l['ex'],triangle=triangle,
+                                                    logy=True, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['ex'],
+                                                    title='{:d} GeV'.format(energy), y_range= y_range_l['ex'])
+                                #ax0.set_xscale("log")
+                                fig.savefig(plots_dir_path + f"{full_modelEnergy_name}_{full_modelConv_name}_" + 'ex_{:d}GeV_iter'.format(energy) + str(i) + '.svg')
+                                plt.close()
+                            if record_metrics and not(generate_plots):
+                                for _,plot in enumerate(feed_dict.keys()):
+                                    emds[f"{k}_{plot}"],errs[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
 
 
                         ### ey ###
-                        k = f"Ey_{energy}GeV"
-                        weight_dict = {
-                            'Geant4': np.reshape(np.sum(np.reshape(data_full[:,:100], (-1, 10, 10)), 1), -1)/data_full.shape[0],
-                            'GFlash': np.reshape(np.sum(np.reshape(data_orig, (-1, 10, 10)), 1), -1)/data_full.shape[0],
-                            full_modelConv_name: np.reshape(np.sum(np.reshape(data_trafo, (-1, 10, 10)), 1), -1)/data_full.shape[0],
-                        }
+                        if ey:
+                            k = f"Ey_{energy}GeV"
+                            weight_dict = {
+                                'Geant4': np.reshape(np.sum(np.reshape(data_full[:,:100], (-1, 10, 10)), 1), -1)/data_full.shape[0],
+                                'GFlash': np.reshape(np.sum(np.reshape(data_orig, (-1, 10, 10)), 1), -1)/data_full.shape[0],
+                                full_modelConv_name: np.reshape(np.sum(np.reshape(data_trafo, (-1, 10, 10)), 1), -1)/data_full.shape[0],
+                            }
 
-                        feed_dict = {
-                            'Geant4': np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
-                            'GFlash': np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
-                            full_modelConv_name: np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
-                        }
-                        if generate_plots:
-                            fig,ax0 = histogram(feed_dict, line_style, colors,
-                                                weights = weight_dict,
-                                                label_loc= 'best', density=False,
-                                                xlabel='y Profile', ylabel= 'Mean Energy [GeV]',
-                                                binning = binning_l['ex'],triangle=triangle,
-                                                logy=True, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['ex'],
-                                                title='{:d} GeV'.format(energy), y_range= y_range_l['ex'])
-                            #ax0.set_xscale("log")
-                            fig.savefig(plots_dir_path + 'ey_{:d}GeV_iter'.format(energy) + str(i) + '.svg')
-                        if record_metrics:
-                            for _,plot in enumerate(feed_dict.keys()):
-                                emds[f"{k}_{plot}"],err[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
+                            feed_dict = {
+                                'Geant4': np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
+                                'GFlash': np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
+                                full_modelConv_name: np.tile(np.arange(0.5, 9.6, 1), data_full.shape[0]),
+                            }
+                            if generate_plots:
+                                fig,ax0,emds,errs = histogram(feed_dict, emds, errs, line_style, colors,
+                                                    weights = weight_dict,
+                                                    label_loc= 'best', density=False,
+                                                    xlabel='y Profile', ylabel= 'Mean Energy [GeV]',
+                                                    binning = binning_l['ex'],triangle=triangle,
+                                                    logy=True, reference_name='Geant4', y_lim_ratio = y_lim_ratio_l['ex'],
+                                                    title='{:d} GeV'.format(energy), y_range= y_range_l['ex'])
+                                #ax0.set_xscale("log")
+                                fig.savefig(plots_dir_path + f"{full_modelEnergy_name}_{full_modelConv_name}_" + 'ey_{:d}GeV_iter'.format(energy) + str(i) + '.svg')
+                                plt.close()
+                            if record_metrics and not(generate_plots):
+                                for _,plot in enumerate(feed_dict.keys()):
+                                    emds[f"{k}_{plot}"],errs[f"{k}_{plot}"] = emd(feed_dict['Geant4'][:100000],feed_dict[plot][:100000],weight_dict[plot][:100000])
 
-                        if generate_plots:
-                            fig,ax0 = scatter(xdata=energy_gflash_trafo[:10000,0], ydata=energy_gflash_trafo[:10000,1],
-                                                    data_label = full_modelEnergy_name,
-                                                    xlabel='$e_{GF}$',ylabel='$e_{refined}$',
-                                                    label_loc='best',title='{:d} GeV'.format(energy))
-                            fig.savefig(plots_dir_path + 'scatter_{:d}GeV_iter'.format(energy) + str(i) + '.svg')
+                        # if generate_plots:
+                        #     fig,ax0 = scatter(xdata=energy_gflash_trafo[:10000,0], ydata=energy_gflash_trafo[:10000,1],
+                        #                             data_label = full_modelEnergy_name,
+                        #                             xlabel='$e_{GF}$',ylabel='$e_{refined}$',
+                        #                             label_loc='best',title='{:d} GeV'.format(energy))
+                        #     fig.savefig(plots_dir_path + f"{full_modelEnergy_name}_{full_modelConv_name}_" + 'scatter_{:d}GeV_iter'.format(energy) + str(i) + '.svg')
+                            plt.close()
                     
                     print(f" - Done {energy} GeV")
 
             if record_metrics:
                 # print(f"EMD: {emds} - Error: {err}")
                 metrics = pd.concat([metrics, pd.DataFrame(emds, index=[i])])
-                errors = pd.concat([errors, pd.DataFrame(err, index=[i])])
+                errors = pd.concat([errors, pd.DataFrame(errs, index=[i])])
 
 
         if record_metrics:
@@ -1584,5 +1624,5 @@ def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim,
                 metrics.to_csv(f"{metrics_dir_path}/emds/{modelEnergy_type}_{modelEnergy_version}_metrics.csv")
                 errors.to_csv(f"{metrics_dir_path}/errors/{modelEnergy_type}_{modelEnergy_version}_errors.csv")
     
-    torch.cuda.empty_cache()
+    # torch.cuda.empty_cache()
     return "Done!"

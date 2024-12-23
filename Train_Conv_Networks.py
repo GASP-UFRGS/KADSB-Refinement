@@ -1,4 +1,5 @@
 import argparse
+import time
 import torch
 from pathlib import Path
 from functions import train_conv_network
@@ -23,7 +24,8 @@ debug = args.debug
                                     
 
 
-conv_models_dict = {"Wav_16_8_4":{"modelConv_type":"Wav","en_elayers_dim":16,"temb_dim":8,"conv_dof":4}}
+conv_models_dict = {"Bottleneck_16_8_2":{"modelConv_type":"Bottleneck","en_elayers_dim":16,"temb_dim":8,"conv_dof":2},
+                    "BottleneckAttention_16_8_1":{"modelConv_type":"BottleneckAttention","en_elayers_dim":16,"temb_dim":8,"conv_dof":1}}
 
 sel_conv_models = conv_models_dict.keys()
 
@@ -31,6 +33,7 @@ if __name__ == "__main__":
 
     for conv_model in sel_conv_models:
         torch.cuda.empty_cache()
+        time.sleep(10)
         if debug:
             status = train_conv_network(conv_models_dict[conv_model]['modelConv_type'], conv_models_dict[conv_model]['en_elayers_dim'], conv_models_dict[conv_model]['temb_dim'], conv_models_dict[conv_model]['conv_dof'], n_iter=10)
         else:            
