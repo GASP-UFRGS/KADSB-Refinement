@@ -352,7 +352,7 @@ def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim,
     else:
         CUDA = False
     device = torch.device("cuda" if CUDA else "cpu")
-    print(device)
+    
 
     full_sample = full_model_metrics
 
@@ -380,11 +380,11 @@ def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim,
     full_modelEnergy_name = f"{modelEnergy_type}_{modelEnergy_version}"
     full_modelConv_name = f"{modelConv_type}_{modelConv_version}"
 
-    plots_dir_path = f'{abs_path}/cpu/plots/Full_Models/{full_modelEnergy_name}_{full_modelConv_name}/'
+    plots_dir_path = f'{abs_path}/timing/plots/Full_Models/{full_modelEnergy_name}_{full_modelConv_name}/'
     if full_model_metrics:
-        metrics_dir_path = f'{abs_path}/cpu/metrics/full_model_metrics/' #{full_modelEnergy_name}_{full_modelConv_name}/'
+        metrics_dir_path = f'{abs_path}/timing/metrics/full_model_metrics/' #{full_modelEnergy_name}_{full_modelConv_name}/'
     else:
-        metrics_dir_path = f'{abs_path}/cpu/metrics/en_metrics/'
+        metrics_dir_path = f'{abs_path}/timing/metrics/en_metrics/'
 
     if en_model_iter == -1:
         energy_iter_list = range(1,10)
@@ -898,6 +898,7 @@ def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim,
             netsEnergy['f'].eval()
             netsEnergy['b'].eval()
 
+
             modelConv_f = torch.nn.DataParallel(modelConv_f)
             modelConv_b = torch.nn.DataParallel(modelConv_b)
 
@@ -912,13 +913,15 @@ def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim,
 
             netsConv['f'].eval()
             netsConv['b'].eval()
+
+
             #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
             #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
             # free, total = torch.cuda.mem_get_info(torch.device('cuda:0'))
             # mem_used_mb = (total - free) / 1024 ** 2
             # print(f"After loading model / before sampling: {mem_used_mb}")
-            print(device)
+            
             sample = sample_data(dls, data, netsEnergy, netsConv, de, d,
                                     num_steps_voxel, num_steps_energy,
                                     gammas_voxel, gammas_energy, device,
@@ -1320,7 +1323,7 @@ def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim,
 
                     #energy_voxel_gflash_orig, energy_voxel_gflash_trafo, energy_gflash_trafo, _ = sample(forward_or_backward = 'f', forward_or_backward_rev = 'b')
                     # energy_voxel_gflash_orig, energy_voxel_gflash_trafo, energy_gflash_trafo, energy_particle = sample(forward_or_backward = 'f', forward_or_backward_rev = 'b')
-                    print(device)
+                    
                     sample = sample_data(dls, data, netsEnergy, netsConv, de, d,
                                     num_steps_voxel, num_steps_energy,
                                     gammas_voxel, gammas_energy, device,
@@ -1610,6 +1613,8 @@ def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim,
                 # metrics["Ey"] = metrics[f"Ey_{full_modelConv_name}"] - metrics["Ey_Geant4"]
                 metrics["En_Inference_Time"] = np.mean(netsEnergy_ts)
                 metrics["Conv_Inference_Time"] = np.mean(netsConv_ts)
+                metrics["Tot_Inf_Time"] = np.mean(netsEnergy_ts+netsConv_ts)
+                metrics["Tot_Inf_Time_Std"] = np.std(netsEnergy_ts+netsConv_ts)
 
                 metrics.to_csv(f"{metrics_dir_path}/emds/{modelEnergy_type}_{modelEnergy_version}_{modelConv_type}_{modelConv_version}_metrics.csv")
                 errors.to_csv(f"{metrics_dir_path}/errors/{modelEnergy_type}_{modelEnergy_version}_{modelConv_type}_{modelConv_version}_errors.csv")
@@ -1620,6 +1625,8 @@ def sampling_and_plotting(modelEnergy_type, en_elayers_dim, pos_dim,
                 # metrics["ESumFrac1D"] = metrics[f"EsumFrac1D_{full_modelEnergy_name}"] - metrics["EsumFrac1D_Geant4"]
                 metrics["En_Inference_Time"] = np.mean(netsEnergy_ts)
                 metrics["Conv_Inference_Time"] = np.mean(netsConv_ts)
+                metrics["Tot_Inf_Time"] = np.mean(netsEnergy_ts+netsConv_ts)
+                metrics["Tot_Inf_Time_Std"] = np.std(netsEnergy_ts+netsConv_ts)
 
                 metrics.to_csv(f"{metrics_dir_path}/emds/{modelEnergy_type}_{modelEnergy_version}_metrics.csv")
                 errors.to_csv(f"{metrics_dir_path}/errors/{modelEnergy_type}_{modelEnergy_version}_errors.csv")

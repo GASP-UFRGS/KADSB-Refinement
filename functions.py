@@ -448,7 +448,7 @@ def sample_data(dls, data, netsEnergy, netsConv, de, d, num_steps_voxel, num_ste
         with torch.no_grad():
             for k in range(num_iter_energy):
                 gamma = gammas_energy[k]
-                
+
                 t0 = time.time()
                 #---------------------------------------------------------------------------------------------------#
                 t_old = energy__shower_start + netsEnergy[forward_or_backward_rev](energy__shower_start, 

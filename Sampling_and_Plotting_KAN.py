@@ -70,14 +70,17 @@ conv_models_dict = {"Bottleneck_16_8_2":{"modelConv_type":"Bottleneck", "conv_el
 sel_en_models = en_models_dict.keys()#["Chebyshev_16_8_16"]#["SQuIRELS_256_128_256","Fast_16_8_16"] en_models_dict.keys()
 sel_conv_models = conv_models_dict.keys()#["SQuIRELS_256_128_32"]#
 
-en_models_list = ["Chebyshev_16_8_16","Fast_16_8_16","SQuIRELS_256_128_256","SQuIRELS_256_128_256"]
-conv_models_list = ["Lagrange_16_8_1","Bottleneck_256_128_2","Chebyshev_128_8_4","SQuIRELS_256_128_32"]
+# "Chebyshev_16_8_16",
+# "Lagrange_16_8_1",
+
+en_models_list = ["Fast_16_8_16","SQuIRELS_256_128_256","SQuIRELS_256_128_256"]
+conv_models_list = ["Bottleneck_256_128_2","Chebyshev_128_8_4","SQuIRELS_256_128_32"]
 
 record_metrics = True
 generate_plots = False
 full_model_metrics = True
 energy_intervals = False
-cuda = False
+cuda = True
 
 if __name__ == "__main__":
 
